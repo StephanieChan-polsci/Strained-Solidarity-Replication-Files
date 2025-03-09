@@ -1,0 +1,1700 @@
+---
+title: "strained solidarity observational survey script"
+author: "Stephanie Chan"
+date: "2025-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+packages
+```{r}
+
+#install.packages("survey")
+library(survey)
+#install.packages("stargazer")
+library(stargazer)
+#install.packages("ggplot2")
+library(ggplot2)
+#install.packages("dplyr")
+library(dplyr)
+#install.packages("ggpubr")
+library(ggpubr)
+#install.packages("stargazer")
+library(stargazer)
+#install.packages("RColorBrewer")
+library(RColorBrewer) #display.brewer.all()
+
+```
+
+read in data
+```{r}
+
+###2016###
+load("38040-0001-Data.rda")
+dat16<-da38040.0001
+
+###2020###
+dat20<-read.csv("CMPS 2020 full adult sample weighted CSV.csv",stringsAsFactors = F)
+
+```
+
+#######################
+###independent vars####
+#######################
+
+##########2016#########
+```{r}
+
+#age
+dat16$age<-dat16$AGE
+
+#partisanship
+dat16$part<-NA
+dat16$part[dat16$C25=="(1) Republican" & dat16$C26=="(1) Strong"]<-1
+dat16$part[dat16$C25=="(1) Republican" & dat16$C26=="(2) Not strong"]<-2
+dat16$part[dat16$C25=="(3) Independent" & dat16$C27=="(01) Republican"]<-3
+dat16$part[dat16$C25=="(3) Independent" & dat16$C27=="(03) Independent"]<-4
+dat16$part[dat16$C25=="(3) Independent" & dat16$C27=="(02) Democrat"]<-5
+dat16$part[dat16$C25=="(2) Democrat" & dat16$C26=="(2) Not strong"]<-6
+dat16$part[dat16$C25=="(2) Democrat" & dat16$C26=="(1) Strong"]<-7
+
+dat16$part<-(dat16$part-1)/6
+
+#gender
+dat16$female<-0
+dat16$female[dat16$S3=="(1) Female"]<-1
+
+#income
+dat16$inc<-NA
+dat16$inc[dat16$C383=="(01) Less than $20,000"]<-1
+dat16$inc[dat16$C383=="(02) $20,000 to $29,999"]<-2
+dat16$inc[dat16$C383=="(03) $30,000 to $39,999"]<-3 
+dat16$inc[dat16$C383=="(04) $40,000 to $49,999"]<-4  
+dat16$inc[dat16$C383=="(05) $50,000 to $59,999"]<-5  
+dat16$inc[dat16$C383=="(06) $60,000 to $69,999"]<-6  
+dat16$inc[dat16$C383=="(07) $70,000 to $79,999"]<-7  
+dat16$inc[dat16$C383=="(08) $80,000 to $89,999"]<-8  
+dat16$inc[dat16$C383=="(09) $90,000 to $99,999"]<-9 
+dat16$inc[dat16$C383=="(10) $100,000 to $149,999"]<-10
+dat16$inc[dat16$C383=="(11) $150,000 to $199,999"]<-11  
+dat16$inc[dat16$C383=="(12) $200,000 or more"]<-12 
+
+dat16$inc<-(as.numeric(dat16$inc)-1)/11
+
+#education
+dat16$ed<-NA
+dat16$ed[dat16$C381=="(1) Grades 1 - 8"]<-1
+dat16$ed[dat16$C381=="(2) Some High School"]<-2
+dat16$ed[dat16$C381=="(3) High School graduate or GED"]<-3
+dat16$ed[dat16$C381=="(4) Some college, 2-year degree"]<-4
+dat16$ed[dat16$C381=="(5) 4-year college graduate"]<-5
+dat16$ed[dat16$C381=="(6) Post-graduate education"]<-6
+
+dat16$ed<-(as.numeric(dat16$ed)-1)/5
+
+#race
+dat16$myra<-NA
+dat16$myra[dat16$S2_1==1]<-"white"
+dat16$myra[dat16$S2_2==1]<-"latinx"
+dat16$myra[dat16$S2_3==1]<-"black"
+dat16$myra[dat16$S2_4==1]<-"aapi"
+
+#immigrant generation
+dat16$immgen<-NA
+dat16$immgen[dat16$S7=="(2) Another country"]<-1
+
+dat16$immgen[dat16$S7=="(1) United States" & dat16$C377=="(02) Both parents born in another country"]<-2
+dat16$immgen[dat16$S7=="(1) United States" & dat16$C377=="(04) 1 parent born in U.S. / 1 parent born elsewhere"]<-2
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & dat16$C377=="(02) Both parents born in another country"]<-2
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & dat16$C377=="(04) 1 parent born in U.S. / 1 parent born elsewhere"]<-2
+
+dat16$immgen[dat16$S7=="(1) United States" &
+               dat16$C377=="(01) Both parents born in the U.S." &
+               dat16$C379=="(02) 3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(03) 2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(04) 1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(05) All 4 grandparents born outside U.S."]<-3
+
+dat16$immgen[dat16$S7=="(3) Puerto Rico " & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(02) 3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(03) 2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(3) Puerto Rico " & dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(04) 1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(3) Puerto Rico " & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(05) All 4 grandparents born outside U.S."]<-3
+
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(02) 3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(03) 2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(04) 1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(05) All 4 grandparents born outside U.S."]<-3
+
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(02) 3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(03) 2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(04) 1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(05) All 4 grandparents born outside U.S."]<-3
+
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(01) All 4 grandparents born in U.S."]<-4
+dat16$immgen[dat16$S7=="(1) United States" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(01) All 4 grandparents born in U.S."]<-4
+
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(01) Both parents born in the U.S." & 
+               dat16$C379=="(01) All 4 grandparents born in U.S."]<-4
+dat16$immgen[dat16$S7=="(3) Puerto Rico" & 
+               dat16$C377=="(03) Both parents born in Puerto Rico" & 
+               dat16$C379=="(01) All 4 grandparents born in U.S."]<-4
+
+```
+
+##########2020#########
+```{r}
+
+#age
+dat20$age<-NA
+dat20$age<-2020-dat20$S5
+
+#partisanship
+dat20$part<-NA
+dat20$part[dat20$Q21=="Republican" & dat20$Q22=="Strong"]<-1
+dat20$part[dat20$Q21=="Republican" & dat20$Q22=="Not strong"]<-2
+dat20$part[dat20$Q21=="Independent" & dat20$Q23=="Republican"]<-3
+dat20$part[dat20$Q21=="Independent" & dat20$Q23=="Independent"]<-4
+dat20$part[dat20$Q21=="Independent" & dat20$Q23=="Democrat"]<-5
+dat20$part[dat20$Q21=="Democrat" & dat20$Q22=="Not strong"]<-6
+dat20$part[dat20$Q21=="Democrat" & dat20$Q22=="Strong"]<-7
+
+dat20$part<-(dat20$part-1)/6
+
+#gender
+dat20$female<-NA
+dat20$female[dat20$S3b=="Woman"]<-1
+dat20$female[dat20$S3b=="Man"]<-0
+dat20$female[dat20$S3b=="Non-binary"]<-0
+dat20$female[dat20$S3b=="Something else (Specify)"]<-0
+
+
+#income
+dat20$inc<-NA
+dat20$inc[dat20$Q813=="Less than $20,000"]<-1
+dat20$inc[dat20$Q813=="$20,000 to $29,999"]<-2
+dat20$inc[dat20$Q813=="$30,000 to $39,999"]<-3 
+dat20$inc[dat20$Q813=="$40,000 to $49,999"]<-4
+dat20$inc[dat20$Q813=="$50,000 to $59,999"]<-5 
+dat20$inc[dat20$Q813=="$60,000 to $69,999"]<-6  
+dat20$inc[dat20$Q813=="$70,000 to $79,999"]<-7  
+dat20$inc[dat20$Q813=="$80,000 to $89,999"]<-8  
+dat20$inc[dat20$Q813=="$90,000 to $99,999"]<-9  
+dat20$inc[dat20$Q813=="$100,000 to $149,999"]<-10
+dat20$inc[dat20$Q813=="$150,000 to $199,999"]<-11
+dat20$inc[dat20$Q813=="$200,000 or more" ]<-12
+
+dat20$inc<-(dat20$inc-1)/11
+
+#education
+dat20$ed<-NA
+dat20$ed[dat20$S13=="Grades 1-8"]<-1
+dat20$ed[dat20$S13=="Some High School, but did not graduate"]<-2
+dat20$ed[dat20$S13=="High School graduate or GED"]<-3
+dat20$ed[dat20$S13=="Some college"]<-4
+dat20$ed[dat20$S13=="Associates, 2-year degree"]<-4
+dat20$ed[dat20$S13=="Bachelors, 4-year degree"]<-5
+dat20$ed[dat20$S13=="Post-graduate degree"]<-6
+
+dat20$ed<-(dat20$ed-1)/6
+
+#race
+dat20$myra<-NA
+dat20$myra[dat20$race=="AAPI"]<-"aapi"
+dat20$myra[dat20$race=="Latino"]<-"latinx"
+dat20$myra[dat20$race=="Black"]<-"black"
+dat20$myra[dat20$race=="White"]<-"white"
+
+#immigrant generation
+dat20$immgen<-NA
+dat20$immgen[dat20$S7=="Another country"]<-1
+
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in another country"]<-2
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="1 parent born in U.S. / 1 parent born elsewhere"]<-2
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in another country"]<-2
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="1 parent born in U.S. / 1 parent born elsewhere"]<-2
+
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="All 4 grandparents born outside U.S."]<-3
+
+dat20$immgen[dat20$S7=="Puerto Rico " & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat20$immgen[dat20$S7=="Puerto Rico " & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat20$immgen[dat20$S7=="Puerto Rico " & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="All 4 grandparents born outside U.S."]<-3
+
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="All 4 grandparents born outside U.S."]<-3
+
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="3 grandparents born in U.S. / 1 elsewhere"]<-3
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="2 grandparents born in U.S. / 2 elsewhere"]<-3
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="1 grandparents born in U.S. / 3 elsewhere"]<-3
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="All 4 grandparents born outside U.S."]<-3
+
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="All 4 grandparents born in U.S."]<-4
+dat20$immgen[dat20$S7=="United States" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="All 4 grandparents born in U.S."]<-4
+
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in the U.S." & dat20$Q812=="All 4 grandparents born in U.S."]<-4
+dat20$immgen[dat20$S7=="Puerto Rico" & dat20$Q809=="Both parents born in Puerto Rico" & dat20$Q812=="All 4 grandparents born in U.S."]<-4
+
+
+```
+
+#######################
+########vars###########
+#######################
+
+##########2016#########
+```{r}
+
+#how much discrimination against Asian Americans today, don't know included as NA
+dat16$discaa<-NA
+dat16$discaa[dat16$C245=="(1) A lot"]<-3
+dat16$discaa[dat16$C245=="(2) Some"]<-2
+dat16$discaa[dat16$C245=="(3) A little"]<-1
+dat16$discaa[dat16$C245=="(4) None at all"]<-0
+dat16$discaa<-dat16$discaa/3
+
+#how much discrimination against Blacks today, don't know included as NA
+dat16$discblack<-NA
+dat16$discblack[dat16$C244=="(1) A lot"]<-3
+dat16$discblack[dat16$C244=="(2) Some"]<-2
+dat16$discblack[dat16$C244=="(3) A little"]<-1
+dat16$discblack[dat16$C244=="(4) None at all"]<-0
+dat16$discblack<-dat16$discblack/3
+
+#how much discrimination against Latinos today, don't know included as NA
+dat16$disclat<-NA
+dat16$disclat[dat16$C247=="(1) A lot"]<-3
+dat16$disclat[dat16$C247=="(2) Some"]<-2
+dat16$disclat[dat16$C247=="(3) A little"]<-1
+dat16$disclat[dat16$C247=="(4) None at all"]<-0
+dat16$disclat<-dat16$disclat/3
+
+#how much discrimination against whites today, don't know included as NA
+dat16$discwhite<-NA
+dat16$discwhite[dat16$C243=="(1) A lot"]<-3
+dat16$discwhite[dat16$C243=="(2) Some"]<-2
+dat16$discwhite[dat16$C243=="(3) A little"]<-1
+dat16$discwhite[dat16$C243=="(4) None at all"]<-0
+dat16$discwhite<-dat16$discwhite/3
+
+#linked fate-own race
+  #C150: do you think what happens to [] people in this country will have...
+  #C151: Will it affect you a lot, some, not very much
+dat16$link<-NA
+dat16$link[dat16$C150=="(2) No"]<-0
+dat16$link[dat16$C151=="(3) Not very much"]<-1
+dat16$link[dat16$C151=="(2) Some"]<-2
+dat16$link[dat16$C151=="(1) A lot"]<-3
+
+dat16$link<-dat16$link/3
+
+#support blm-from what you have heard about the Black Lives Matter movement, do you...the Black Lives Matter movement activism
+dat16$suppblm<-NA
+dat16$suppblm[dat16$C228=="(1) Strongly support"]<-4
+dat16$suppblm[dat16$C228=="(2) Somewhat support"]<-3
+dat16$suppblm[dat16$C228=="(3) Neither support or oppose"]<-2
+dat16$suppblm[dat16$C228=="(4) Somewhat oppose"]<-1
+dat16$suppblm[dat16$C228=="(5) Strongly oppose"]<-0 
+
+dat16$suppblm<-dat16$suppblm/4
+
+```
+
+
+##########2020#########
+```{r}
+
+#how much discrimination against Asian Americans today, don't know included as NA
+dat20$discaa<-NA
+dat20$discaa[dat20$Q619_Q626r3=="None at all"]<-0
+dat20$discaa[dat20$Q619_Q626r3=="A little"]<-1
+dat20$discaa[dat20$Q619_Q626r3=="Some"]<-2
+dat20$discaa[dat20$Q619_Q626r3=="A lot"]<-3
+
+dat20$discaa<-dat20$discaa/3
+
+#how much discrimination against Blacks today, don't know included as NA
+dat20$discblack<-NA
+dat20$discblack[dat20$Q619_Q626r2=="None at all"]<-0
+dat20$discblack[dat20$Q619_Q626r2=="A little"]<-1
+dat20$discblack[dat20$Q619_Q626r2=="Some"]<-2
+dat20$discblack[dat20$Q619_Q626r2=="A lot"]<-3
+
+dat20$discblack<-dat20$discblack/3
+
+#how much discrimination against Latinos today, don't know included as NA
+dat20$disclat<-NA
+dat20$disclat[dat20$Q619_Q626r6=="None at all"]<-0
+dat20$disclat[dat20$Q619_Q626r6=="A little"]<-1
+dat20$disclat[dat20$Q619_Q626r6=="Some"]<-2
+dat20$disclat[dat20$Q619_Q626r6=="A lot"]<-3
+
+dat20$disclat<-dat20$disclat/3
+
+#how much discrimination against Whites today, don't know included as NA
+dat20$discwhite<-NA
+dat20$discwhite[dat20$Q619_Q626r1=="None at all"]<-0
+dat20$discwhite[dat20$Q619_Q626r1=="A little"]<-1
+dat20$discwhite[dat20$Q619_Q626r1=="Some"]<-2
+dat20$discwhite[dat20$Q619_Q626r1=="A lot"]<-3
+
+dat20$discwhite<-dat20$discwhite/3
+
+#linked fate-Asians
+dat20$link<-NA
+dat20$link[dat20$Q551_Q559r5=="Nothing to do with what happens in my life"]<-0
+dat20$link[dat20$Q551_Q559r5=="Only a little to do with what happens in my life"]<-1
+dat20$link[dat20$Q551_Q559r5=="Something to do with what happens in my life"]<-2
+dat20$link[dat20$Q551_Q559r5=="A lot to do with what happens in my life"]<-3
+dat20$link[dat20$Q551_Q559r5=="A huge amount to do with what happens in my life"]<-4
+
+dat20$link<-dat20$link/4
+
+#linked fate-Black people
+dat20$linkbl<-NA
+dat20$linkbl[dat20$Q551_Q559r1=="Nothing to do with what happens in my life"]<-0
+dat20$linkbl[dat20$Q551_Q559r1=="Only a little to do with what happens in my life"]<-1
+dat20$linkbl[dat20$Q551_Q559r1=="Something to do with what happens in my life"]<-2
+dat20$linkbl[dat20$Q551_Q559r1=="A lot to do with what happens in my life"]<-3
+dat20$linkbl[dat20$Q551_Q559r1=="A huge amount to do with what happens in my life"]<-4
+
+dat20$linkbl<-dat20$linkbl/4
+
+#linked fate-Hispanic
+dat20$linkla<-NA
+dat20$linkla[dat20$Q551_Q559r2=="Nothing to do with what happens in my life"]<-0
+dat20$linkla[dat20$Q551_Q559r2=="Only a little to do with what happens in my life"]<-1
+dat20$linkla[dat20$Q551_Q559r2=="Something to do with what happens in my life"]<-2
+dat20$linkla[dat20$Q551_Q559r2=="A lot to do with what happens in my life"]<-3
+dat20$linkla[dat20$Q551_Q559r2=="A huge amount to do with what happens in my life"]<-4
+
+dat20$linkla<-dat20$linkla/4
+
+#linked fate-whites
+dat20$linkwh<-NA
+dat20$linkwh[dat20$Q551_Q559r4=="Nothing to do with what happens in my life"]<-0
+dat20$linkwh[dat20$Q551_Q559r4=="Only a little to do with what happens in my life"]<-1
+dat20$linkwh[dat20$Q551_Q559r4=="Something to do with what happens in my life"]<-2
+dat20$linkwh[dat20$Q551_Q559r4=="A lot to do with what happens in my life"]<-3
+dat20$linkwh[dat20$Q551_Q559r4=="A huge amount to do with what happens in my life"]<-4
+
+#support for BLM: Based on everything you have heard or seen, how much do you support or oppose the Black Lives Matter movement? 
+dat20$suppblm[dat20$Q358=="Strongly support"]<-4
+dat20$suppblm[dat20$Q358=="Somewhat support"]<-3
+dat20$suppblm[dat20$Q358=="Neither support nor oppose"]<-2
+dat20$suppblm[dat20$Q358=="Somewhat oppose"]<-1
+dat20$suppblm[dat20$Q358=="Strongly oppose"]<-0
+  
+dat20$suppblm<-dat20$suppblm/4  
+
+#Responsibility 359 Respondent's Race have a responsibility to support the Black Lives Matter movement.
+dat20$respblm[dat20$Q359r1=="Strongly agree"]<-4
+dat20$respblm[dat20$Q359r1=="Somewhat agree"]<-3
+dat20$respblm[dat20$Q359r1=="Neither agree nor disagree"]<-2
+dat20$respblm[dat20$Q359r1=="Somewhat disagree"]<-1
+dat20$respblm[dat20$Q359r1=="Strongly disagree"]<-0
+
+dat20$respblm<-dat20$respblm/4
+
+#Benefit 360 Respondent's Race will benefit from the success of the Black Lives Matter movement. 
+
+dat20$benblm[dat20$Q359r2=="Strongly agree"]<-4
+dat20$benblm[dat20$Q359r2=="Somewhat agree"]<-3
+dat20$benblm[dat20$Q359r2=="Neither agree nor disagree"]<-2
+dat20$benblm[dat20$Q359r2=="Somewhat disagree"]<-1
+dat20$benblm[dat20$Q359r2=="Strongly disagree"]<-0  
+
+dat20$benblm<-dat20$benblm/4
+
+
+```
+
+subset by racial group
+```{r}
+
+#aapi
+aa16<-dat16[dat16$myra=="aapi",]
+aa20<-dat20[dat20$myra=="aapi",]
+
+#black
+bl16<-dat16[dat16$myra=="black",]
+bl20<-dat20[dat20$myra=="black",]
+
+#latinx
+la16<-dat16[dat16$myra=="latinx",]
+la20<-dat20[dat20$myra=="latinx",]
+
+#non-hispanic white
+wh16<-dat16[dat16$myra=="white",]
+wh20<-dat20[dat20$myra=="white",]
+
+```
+
+#Figure 1 and Appendix Tables A.1-A.4
+```{r}
+
+#############perceptions of aapi discrimination among aapi#############
+discaa.tab<-as.data.frame(matrix(NA,nrow=8,ncol=3))
+colnames(discaa.tab)<-c("response","year","num")
+discaa.tab$response<-rep(c("none","a little","some","a lot"),2)
+discaa.tab$year<-c(rep("2016",4),rep("2020",4))
+discaa.tab$num<-c(table(aa16$discaa)/sum(table(aa16$discaa)),
+                  table(aa20$discaa)/sum(table(aa20$discaa)))
+
+#appendix table as percents
+discaa.apptab1<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(discaa.apptab1)<-c("none","a little","some","a lot")
+row.names(discaa.apptab1)<-c("2016","2020")
+
+discaa.apptab1[1,]<-round(table(aa16$discaa)/sum(table(aa16$discaa)),digits=3)
+discaa.apptab1[2,]<-round(table(aa20$discaa)/sum(table(aa20$discaa)),digits=3)
+
+#write.csv(discaa.apptab1,"cmps 2016 and 2020 perceived disc against aa.csv")
+
+#appendix table as raw numbers
+discaa.apptab2<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(discaa.apptab2)<-c("none","a little","some","a lot")
+row.names(discaa.apptab2)<-c("2016","2020")
+
+discaa.apptab2[1,]<-table(aa16$discaa)
+discaa.apptab2[2,]<-table(aa20$discaa)
+
+#############perceptions of discrimination against African Americans among aapi#############
+discblack.tab<-as.data.frame(matrix(NA,nrow=8,ncol=3))
+colnames(discblack.tab)<-c("response","year","num")
+discblack.tab$response<-rep(c("none","a little","some","a lot"),2)
+discblack.tab$year<-c(rep("2016",4),rep("2020",4))
+discblack.tab$num<-c(table(aa16$discblack)/sum(table(aa16$discblack)),
+                  table(aa20$discblack)/sum(table(aa20$discblack)))
+
+#appendix table as percents
+discblack.apptab1<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(discblack.apptab1)<-c("none","a little","some","a lot")
+row.names(discblack.apptab1)<-c("2016","2020")
+
+discblack.apptab1[1,]<-round(table(aa16$discblack)/sum(table(aa16$discblack)),digits=3)
+discblack.apptab1[2,]<-round(table(aa20$discblack)/sum(table(aa20$discblack)),digits=3)
+
+#write.csv(discblack.apptab1,"cmps 2016 and 2020 perceived disc against black.csv")
+
+#appendix table as raw numbers
+discblack.apptab2<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(discblack.apptab2)<-c("none","a little","some","a lot")
+row.names(discblack.apptab2)<-c("2016","2020")
+
+discblack.apptab2[1,]<-table(aa16$discblack)
+discblack.apptab2[2,]<-table(aa20$discblack)
+
+
+#############perceptions of discrimination against Latinx among aapi#############
+disclat.tab<-as.data.frame(matrix(NA,nrow=8,ncol=3))
+colnames(disclat.tab)<-c("response","year","num")
+disclat.tab$response<-rep(c("none","a little","some","a lot"),2)
+disclat.tab$year<-c(rep("2016",4),rep("2020",4))
+disclat.tab$num<-c(table(aa16$disclat)/sum(table(aa16$disclat)),
+                  table(aa20$disclat)/sum(table(aa20$disclat)))
+
+#appendix table as percents
+disclat.apptab1<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(disclat.apptab1)<-c("none","a little","some","a lot")
+row.names(disclat.apptab1)<-c("2016","2020")
+
+disclat.apptab1[1,]<-round(table(aa16$disclat)/sum(table(aa16$disclat)),digits=3)
+disclat.apptab1[2,]<-round(table(aa20$disclat)/sum(table(aa20$disclat)),digits=3)
+
+#write.csv(disclat.apptab1,"cmps 2016 and 2020 perceived disc against lat.csv")
+
+#appendix table as raw numbers
+disclat.apptab2<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(disclat.apptab2)<-c("none","a little","some","a lot")
+row.names(disclat.apptab2)<-c("2016","2020")
+
+disclat.apptab2[1,]<-table(aa16$disclat)
+disclat.apptab2[2,]<-table(aa20$disclat)
+
+
+#############perceptions of discrimination against whites among aapi#############
+discwhite.tab<-as.data.frame(matrix(NA,nrow=8,ncol=3))
+colnames(discwhite.tab)<-c("response","year","num")
+discwhite.tab$response<-rep(c("none","a little","some","a lot"),2)
+discwhite.tab$year<-c(rep("2016",4),rep("2020",4))
+discwhite.tab$num<-c(table(aa16$discwhite)/sum(table(aa16$discwhite)),
+                  table(aa20$discwhite)/sum(table(aa20$discwhite)))
+
+#appendix table as percents
+discwhite.apptab1<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(discwhite.apptab1)<-c("none","a little","some","a lot")
+row.names(discwhite.apptab1)<-c("2016","2020")
+
+discwhite.apptab1[1,]<-round(table(aa16$discwhite)/sum(table(aa16$discwhite)),digits=3)
+discwhite.apptab1[2,]<-round(table(aa20$discwhite)/sum(table(aa20$discwhite)),digits=3)
+
+#write.csv(discwhite.apptab1,"cmps 2016 and 2020 perceived disc against white.csv")
+
+#appendix table as raw numbers
+discwhite.apptab2<-as.data.frame(matrix(NA,nrow=2,ncol=4))
+colnames(discwhite.apptab2)<-c("none","a little","some","a lot")
+row.names(discwhite.apptab2)<-c("2016","2020")
+
+discwhite.apptab2[1,]<-table(aa16$discwhite)
+discwhite.apptab2[2,]<-table(aa20$discwhite)
+
+###figures###
+#as percent of people responding, how many responded in x category by year, all appi
+order1<-c("none","a little","some","a lot")
+
+discaa.plot<-ggplot(data=discaa.tab,aes(x=response,y=num,fill=year))+
+  geom_bar(aes(x=factor(response,order1),y=num),position="dodge",stat="identity")+
+  theme_minimal()+
+  scale_fill_manual(values=c("grey","black"))+
+  labs(y="proportion",title="Perceived Discrimination Against Asian Americans")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(text=element_text(size=20))+
+  theme(axis.title.x=element_blank())
+
+#as percent of people responding, how many responded in x category by year, all appi
+order2<-c("none","a little","some","a lot")
+
+discblack.plot<-ggplot(data=discblack.tab,aes(x=response,y=num,fill=year))+
+  geom_bar(aes(x=factor(response,order2),y=num),position="dodge",stat="identity")+
+  theme_minimal()+
+  scale_fill_manual(values=c("grey","black"))+
+  labs(y="proportion",title="Perceived Discrimination Against Black Americans")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(text=element_text(size=20))+
+  theme(axis.title.x=element_blank())
+
+#as percent of people responding, how many responded in x category by year, all appi
+order3<-c("none","a little","some","a lot")
+
+disclat.plot<-ggplot(data=disclat.tab,aes(x=response,y=num,fill=year))+
+  geom_bar(aes(x=factor(response,order3),y=num),position="dodge",stat="identity")+
+  theme_minimal()+
+  scale_fill_manual(values=c("grey","black"))+
+  labs(y="proportion",title="Perceived Discrimination Against Latinx Americans")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(text=element_text(size=20))+
+  theme(axis.title.x=element_blank())
+
+#as percent of people responding, how many responded in x category by year, all appi
+order3<-c("none","a little","some","a lot")
+
+discwhite.plot<-ggplot(data=discwhite.tab,aes(x=response,y=num,fill=year))+
+  geom_bar(aes(x=factor(response,order3),y=num),position="dodge",stat="identity")+
+  theme_minimal()+
+  scale_fill_manual(values=c("grey","black"))+
+  scale_y_continuous(n.breaks=10)+
+  labs(y="proportion",title="Perceived Discrimination Against White Americans")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(text=element_text(size=20))+
+  theme(axis.title.x=element_blank())
+
+#focus on perceiving discrimination against...
+ggarrange(discaa.plot,discblack.plot,disclat.plot,discwhite.plot,ncol=1,nrow=4)
+
+```
+
+plot ordering
+```{r}
+level.order1<-c("Third","Second","First","Full")
+level.order2<-c("Republican","Independent","Democrat","Full")
+```
+
+
+Figure 2 (bottom) and Appendix Table A.5-A.6
+```{r}
+
+#########################by generation (top panel)#########################
+linkaa.discaa.gen.regtab<-as.data.frame(matrix(NA,nrow=8,ncol=6))
+colnames(linkaa.discaa.gen.regtab)<-c("subgroup","year","coefficient","lower","upper","p")
+linkaa.discaa.gen.regtab$subgroup<-c("Full","First","Second","Third",
+                             "Full","First","Second","Third")
+linkaa.discaa.gen.regtab$year<-c(2016,2016,2016,2016,2020,2020,2020,2020)
+
+###2016###
+#full aa sample
+aa16<-aa16[!is.na(aa16$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16$WEIGHT,data=aa16)
+linkaa.discaa.aa16.reg<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[1,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[1,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[1,6]<-summary(temp)$coefficients[2,4]
+
+#first aa sample
+aa16.first<-aa16[aa16$immgen==1,]
+aa16.first<-aa16.first[!is.na(aa16.first$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16.first$WEIGHT,data=aa16.first)
+linkaa.discaa.aa16first.reg<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[2,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[2,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[2,6]<-summary(temp)$coefficients[2,4]
+
+#sec aa sample
+aa16.sec<-aa16[aa16$immgen==2,]
+aa16.sec<-aa16.sec[!is.na(aa16.sec$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16.sec$WEIGHT,data=aa16.sec)
+linkaa.discaa.aa16sec.reg<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[3,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[3,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[3,6]<-summary(temp)$coefficients[2,4]
+
+#third aa sample
+aa16.third<-aa16[aa16$immgen>2,]
+aa16.third<-aa16.third[!is.na(aa16.third$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16.third$WEIGHT,data=aa16.third)
+linkaa.discaa.aa16third.reg<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[4,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[4,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[4,6]<-summary(temp)$coefficients[2,4]
+
+###2020###
+#full aa sample
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkaa.discaa.aa20.reg<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[5,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[5,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#first aa sample
+aa20.first<-aa20[aa20$immgen==1,]
+aa20.first<-aa20.first[!is.na(aa20.first$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.first$weight,data=aa20.first)
+linkaa.discaa.aa20first.reg<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[6,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[6,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#sec aa sample
+aa20.sec<-aa20[aa20$immgen==2,]
+aa20.sec<-aa20.sec[!is.na(aa20.sec$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.sec$weight,data=aa20.sec)
+linkaa.discaa.aa20sec.reg<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[7,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[7,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#third aa sample
+aa20.third<-aa20[aa20$immgen>2,]
+aa20.third<-aa20.third[!is.na(aa20.third$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.third$weight,data=aa20.third)
+linkaa.discaa.aa20third.reg<-svyglm(link~discaa+part+age+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+linkaa.discaa.gen.regtab[8,3]<-temp$coefficients[2]
+linkaa.discaa.gen.regtab[8,4:5]<-confint(temp)[2,]
+linkaa.discaa.gen.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+#stargazer table
+a<-linkaa.discaa.aa16.reg
+b<-linkaa.discaa.aa16first.reg
+c<-linkaa.discaa.aa16sec.reg
+d<-linkaa.discaa.aa16third.reg
+e<-linkaa.discaa.aa20.reg
+f<-linkaa.discaa.aa20first.reg
+g<-linkaa.discaa.aa20sec.reg
+h<-linkaa.discaa.aa20third.reg
+
+stargazer(a,b,c,d,e,f,g,h,
+          type="html",
+          out="Link and Discrimination Gen.html")
+
+###partisan subgroup plot###
+linkaa.discaa.gen.regtab$year<-as.character(linkaa.discaa.gen.regtab$year)
+
+changeshape<-c(16,15,17,8,
+               16,15,17,8,
+               16,15,17,8)
+
+link.disc.gen.plot<-ggplot(linkaa.discaa.gen.regtab,aes(x=coefficient,y=year,shape=factor(subgroup,level=level.order1)))+
+  geom_point(stat="identity",
+             size=3,
+             position=ggstance::position_dodgev(height = 0.3))+
+  geom_errorbarh(aes(xmax=upper,xmin=lower),
+                 height=0.3,
+                 position=ggstance::position_dodgev(height = 0.3))+
+  scale_shape_manual(values=changeshape)+
+  geom_vline(xintercept=0,linetype=2)+
+  labs(y="year",title="")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(axis.title.x=element_blank())+
+  theme(text=element_text(size=20))+
+  scale_fill_discrete(name = "year")+
+  labs(shape="generation")
+
+
+#########################by partisanship (bottom panel)#########################
+linkaa.discaa.part.regtab<-as.data.frame(matrix(NA,nrow=8,ncol=6))
+colnames(linkaa.discaa.part.regtab)<-c("subgroup","year","coefficient","lower","upper","p")
+linkaa.discaa.part.regtab$subgroup<-c("Full","Democrat","Independent","Republican",
+                             "Full","Democrat","Independent","Republican")
+linkaa.discaa.part.regtab$year<-c(2016,2016,2016,2016,2020,2020,2020,2020)
+
+###2016###
+#full aa sample
+aa16<-aa16[!is.na(aa16$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16$WEIGHT,data=aa16)
+linkaa.discaa.aa16.reg<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[1,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[1,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[1,6]<-summary(temp)$coefficients[2,4]
+
+#dem aa sample
+aa16.dem<-aa16[aa16$part<0.5,]
+aa16.dem<-aa16.dem[!is.na(aa16.dem$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16.dem$WEIGHT,data=aa16.dem)
+linkaa.discaa.aa16dem.reg<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[2,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[2,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[2,6]<-summary(temp)$coefficients[2,4]
+
+#ind aa sample
+aa16.ind<-aa16[aa16$part==0.5,]
+aa16.ind<-aa16.ind[!is.na(aa16.ind$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16.ind$WEIGHT,data=aa16.ind)
+linkaa.discaa.aa16ind.reg<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[3,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[3,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[3,6]<-summary(temp)$coefficients[2,4]
+
+#rep aa sample
+aa16.rep<-aa16[aa16$part>0.5,]
+aa16.rep<-aa16.rep[!is.na(aa16.rep$WEIGHT),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa16.rep$WEIGHT,data=aa16.rep)
+linkaa.discaa.aa16rep.reg<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[4,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[4,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[4,6]<-summary(temp)$coefficients[2,4]
+
+###2020###
+#full aa sample
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkaa.discaa.aa20.reg<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[5,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[5,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#dem aa sample
+aa20.dem<-aa20[aa20$part<0.5,]
+aa20.dem<-aa20.dem[!is.na(aa20.dem$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.dem$weight,data=aa20.dem)
+linkaa.discaa.aa20dem.reg<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[6,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[6,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#ind aa sample
+aa20.ind<-aa20[aa20$part==0.5,]
+aa20.ind<-aa20.ind[!is.na(aa20.ind$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.ind$weight,data=aa20.ind)
+linkaa.discaa.aa20ind.reg<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[7,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[7,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#rep aa sample
+aa20.rep<-aa20[aa20$part>0.5,]
+aa20.rep<-aa20.rep[!is.na(aa20.rep$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.rep$weight,data=aa20.rep)
+linkaa.discaa.aa20rep.reg<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(link~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+linkaa.discaa.part.regtab[8,3]<-temp$coefficients[2]
+linkaa.discaa.part.regtab[8,4:5]<-confint(temp)[2,]
+linkaa.discaa.part.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+#stargazer table
+a<-linkaa.discaa.aa16.reg
+b<-linkaa.discaa.aa16dem.reg
+c<-linkaa.discaa.aa16ind.reg
+d<-linkaa.discaa.aa16rep.reg
+e<-linkaa.discaa.aa20.reg
+f<-linkaa.discaa.aa20dem.reg
+g<-linkaa.discaa.aa20ind.reg
+h<-linkaa.discaa.aa20rep.reg
+
+stargazer(a,b,c,d,e,f,g,h,
+          type="html",
+          out="Link and Discrimination Part.html")
+
+###partisan subgroup plot###
+linkaa.discaa.part.regtab$year<-as.character(linkaa.discaa.part.regtab$year)
+
+changeshape<-c(16,15,17,8,
+               16,15,17,8,
+               16,15,17,8)
+
+link.disc.part.plot<-ggplot(linkaa.discaa.part.regtab,aes(x=coefficient,y=year,shape=factor(subgroup,level=level.order2)))+
+  geom_point(size=3,
+             position=ggstance::position_dodgev(height = 0.3))+
+  scale_shape_manual(values=changeshape)+
+  geom_errorbarh(aes(xmax=upper,xmin=lower),
+                 height=0.3,
+                 position=ggstance::position_dodgev(height = 0.3))+
+  geom_vline(xintercept=0,linetype=2)+
+  labs(y="year",title="")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(axis.title.x=element_blank())+
+  theme(text=element_text(size=20))+
+  scale_fill_discrete(name = "year")+
+  labs(shape="partisanship")
+
+###composite plot###
+ggarrange(link.disc.gen.plot,link.disc.part.plot,nrow=2)
+
+
+```
+
+#Figure 3 and Appendix Table A.7-A.8
+```{r}
+
+########################by partisanship#########################
+link2.discaa.regtab<-as.data.frame(matrix(NA,nrow=12,ncol=6))
+colnames(link2.discaa.regtab)<-c("subgroup","link","coefficient","lower","upper","p")
+link2.discaa.regtab$subgroup<-c("Full","Democrat","Independent","Republican",
+                             "Full","Democrat","Independent","Republican",
+                             "Full","Democrat","Independent","Republican")
+link2.discaa.regtab$link<-c("Black","Black","Black","Black",
+                            "Latinx","Latinx","Latinx","Latinx",
+                            "White","White","White","White")
+
+
+###Black Americans###
+#full aa sample
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkbl.discaa.aa20.reg<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[1,3]<-temp$coefficients[2]
+link2.discaa.regtab[1,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[1,6]<-summary(temp)$coefficients[2,4]
+
+#dem aa sample
+aa20.dem<-aa20[aa20$part<0.5,]
+aa20.dem<-aa20.dem[!is.na(aa20.dem$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.dem$weight,data=aa20.dem)
+linkbl.discaa.aa20dem.reg<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[2,3]<-temp$coefficients[2]
+link2.discaa.regtab[2,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[2,6]<-summary(temp)$coefficients[2,4]
+
+#ind aa sample
+aa20.ind<-aa20[aa20$part==0.5,]
+aa20.ind<-aa20.ind[!is.na(aa20.ind$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.ind$weight,data=aa20.ind)
+linkbl.discaa.aa20ind.reg<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[3,3]<-temp$coefficients[2]
+link2.discaa.regtab[3,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[3,6]<-summary(temp)$coefficients[2,4]
+
+#rep aa sample
+aa20.rep<-aa20[aa20$part>0.5,]
+aa20.rep<-aa20.rep[!is.na(aa20.rep$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.rep$weight,data=aa20.rep)
+linkbl.discaa.aa20rep.reg<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[4,3]<-temp$coefficients[2]
+link2.discaa.regtab[4,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[4,6]<-summary(temp)$coefficients[2,4]
+
+#stargazer table#
+a<-linkbl.discaa.aa20.reg
+b<-linkbl.discaa.aa20dem.reg
+c<-linkbl.discaa.aa20ind.reg
+d<-linkbl.discaa.aa20rep.reg
+
+###Hispanic Americans###
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkla.discaa.aa20.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[5,3]<-temp$coefficients[2]
+link2.discaa.regtab[5,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#dem aa sample
+aa20.dem<-aa20[aa20$part<0.5,]
+aa20.dem<-aa20.dem[!is.na(aa20.dem$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.dem$weight,data=aa20.dem)
+linkla.discaa.aa20dem.reg<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[6,3]<-temp$coefficients[2]
+link2.discaa.regtab[6,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#ind aa sample
+aa20.ind<-aa20[aa20$part==0.5,]
+aa20.ind<-aa20.ind[!is.na(aa20.ind$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.ind$weight,data=aa20.ind)
+linkla.discaa.aa20ind.reg<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[7,3]<-temp$coefficients[2]
+link2.discaa.regtab[7,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#rep aa sample
+aa20.rep<-aa20[aa20$part>0.5,]
+aa20.rep<-aa20.rep[!is.na(aa20.rep$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.rep$weight,data=aa20.rep)
+linkla.discaa.aa20rep.reg<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[8,3]<-temp$coefficients[2]
+link2.discaa.regtab[8,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+#stargazer table#
+e<-linkla.discaa.aa20.reg
+f<-linkla.discaa.aa20dem.reg
+g<-linkla.discaa.aa20ind.reg
+h<-linkla.discaa.aa20rep.reg
+
+###White Americans###
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkwh.discaa.aa20.reg<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[9,3]<-temp$coefficients[2]
+link2.discaa.regtab[9,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[9,6]<-summary(temp)$coefficients[2,4]
+
+#dem aa sample
+aa20.dem<-aa20[aa20$part<0.5,]
+aa20.dem<-aa20.dem[!is.na(aa20.dem$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.dem$weight,data=aa20.dem)
+linkwh.discaa.aa20dem.reg<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[10,3]<-temp$coefficients[2]
+link2.discaa.regtab[10,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[10,6]<-summary(temp)$coefficients[2,4]
+
+#ind aa sample
+aa20.ind<-aa20[aa20$part==0.5,]
+aa20.ind<-aa20.ind[!is.na(aa20.ind$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.ind$weight,data=aa20.ind)
+linkwh.discaa.aa20ind.reg<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[11,3]<-temp$coefficients[2]
+link2.discaa.regtab[11,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[11,6]<-summary(temp)$coefficients[2,4]
+
+#rep aa sample
+aa20.rep<-aa20[aa20$part>0.5,]
+aa20.rep<-aa20.rep[!is.na(aa20.rep$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.rep$weight,data=aa20.rep)
+linkwh.discaa.aa20rep.reg<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[12,3]<-temp$coefficients[2]
+link2.discaa.regtab[12,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[12,6]<-summary(temp)$coefficients[2,4]
+
+i<-linkla.discaa.aa20.reg
+j<-linkla.discaa.aa20dem.reg
+k<-linkla.discaa.aa20ind.reg
+l<-linkla.discaa.aa20rep.reg
+
+###stargazer table###
+stargazer(a,b,c,d,e,f,g,h,i,j,k,l,
+          type="html",
+          out="Latino Black White Link Discrimination Part.html")
+
+
+###plot###
+changeshape<-c(16,15,17,8,
+               16,15,17,8,
+               16,15,17,8)
+
+link2.discaa.part.plot<-ggplot(link2.discaa.regtab,aes(x=coefficient,y=link,shape=factor(subgroup,level=level.order2)))+
+  geom_point(stat="identity",
+             size=3,
+             position=ggstance::position_dodgev(height = 0.3))+
+  scale_shape_manual(values=changeshape)+
+  geom_errorbarh(aes(xmax=upper,xmin=lower),
+                 height=0.3,
+                 position=ggstance::position_dodgev(height = 0.3))+
+  geom_vline(xintercept=0,linetype=2)+
+  labs(y="Linked Fate Group",title="")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(axis.title.x=element_blank())+
+  theme(text=element_text(size=20))+
+  labs(shape="partisanship")
+
+########################by generation###########################
+
+link2.discaa.regtab<-as.data.frame(matrix(NA,nrow=12,ncol=6))
+colnames(link2.discaa.regtab)<-c("subgroup","link","coefficient","lower","upper","p")
+link2.discaa.regtab$subgroup<-c("Full","First","Second","Third",
+                             "Full","First","Second","Third",
+                             "Full","First","Second","Third")
+link2.discaa.regtab$link<-c("Black","Black","Black","Black",
+                            "Latinx","Latinx","Latinx","Latinx",
+                            "White","White","White","White")
+
+###Black Americans###
+#full aa sample
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkbl.discaa.aa20.reg<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[1,3]<-temp$coefficients[2]
+link2.discaa.regtab[1,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[1,6]<-summary(temp)$coefficients[2,4]
+
+#first aa sample
+aa20.first<-aa20[aa20$immgen==1,]
+aa20.first<-aa20.first[!is.na(aa20.first$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.first$weight,data=aa20.first)
+linkbl.discaa.aa20first.reg<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[2,3]<-temp$coefficients[2]
+link2.discaa.regtab[2,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[2,6]<-summary(temp)$coefficients[2,4]
+
+#sec aa sample
+aa20.sec<-aa20[aa20$immgen==2,]
+aa20.sec<-aa20.sec[!is.na(aa20.sec$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.sec$weight,data=aa20.sec)
+linkbl.discaa.aa20sec.reg<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[3,3]<-temp$coefficients[2]
+link2.discaa.regtab[3,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[3,6]<-summary(temp)$coefficients[2,4]
+
+#third aa sample
+aa20.third<-aa20[aa20$immgen>2,]
+aa20.third<-aa20.third[!is.na(aa20.third$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.third$weight,data=aa20.third)
+linkbl.discaa.aa20third.reg<-svyglm(linkbl~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkbl~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[4,3]<-temp$coefficients[2]
+link2.discaa.regtab[4,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[4,6]<-summary(temp)$coefficients[2,4]
+
+###Hispanic Americans###
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkla.discaa.aa20.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[5,3]<-temp$coefficients[2]
+link2.discaa.regtab[5,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#first aa sample
+aa20.first<-aa20[aa20$immgen==1,]
+aa20.first<-aa20.first[!is.na(aa20.first$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.first$weight,data=aa20.first)
+linkla.discaa.aa20first.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[6,3]<-temp$coefficients[2]
+link2.discaa.regtab[6,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#second aa sample
+aa20.sec<-aa20[aa20$immgen==2,]
+aa20.sec<-aa20.sec[!is.na(aa20.sec$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.sec$weight,data=aa20.sec)
+linkla.discaa.aa20sec.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[7,3]<-temp$coefficients[2]
+link2.discaa.regtab[7,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#third aa sample
+aa20.third<-aa20[aa20$immgen>2,]
+aa20.third<-aa20.third[!is.na(aa20.third$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.third$weight,data=aa20.third)
+linkla.discaa.aa20third.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[8,3]<-temp$coefficients[2]
+link2.discaa.regtab[8,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+###Hispanic Americans###
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkla.discaa.aa20.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[5,3]<-temp$coefficients[2]
+link2.discaa.regtab[5,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#first aa sample
+aa20.first<-aa20[aa20$immgen==1,]
+aa20.first<-aa20.first[!is.na(aa20.first$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.first$weight,data=aa20.first)
+linkla.discaa.aa20first.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[6,3]<-temp$coefficients[2]
+link2.discaa.regtab[6,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#second aa sample
+aa20.sec<-aa20[aa20$immgen==2,]
+aa20.sec<-aa20.sec[!is.na(aa20.sec$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.sec$weight,data=aa20.sec)
+linkla.discaa.aa20sec.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[7,3]<-temp$coefficients[2]
+link2.discaa.regtab[7,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#third aa sample
+aa20.third<-aa20[aa20$immgen>2,]
+aa20.third<-aa20.third[!is.na(aa20.third$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.third$weight,data=aa20.third)
+linkla.discaa.aa20third.reg<-svyglm(linkla~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkla~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[8,3]<-temp$coefficients[2]
+link2.discaa.regtab[8,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+###white Americans###
+aa20<-aa20[!is.na(aa20$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$weight,data=aa20)
+linkwh.discaa.aa20.reg<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[9,3]<-temp$coefficients[2]
+link2.discaa.regtab[9,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[9,6]<-summary(temp)$coefficients[2,4]
+
+#first aa sample
+aa20.first<-aa20[aa20$immgen==1,]
+aa20.first<-aa20.first[!is.na(aa20.first$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.first$weight,data=aa20.first)
+linkwh.discaa.aa20first.reg<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[10,3]<-temp$coefficients[2]
+link2.discaa.regtab[10,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[10,6]<-summary(temp)$coefficients[2,4]
+
+#second aa sample
+aa20.sec<-aa20[aa20$immgen==2,]
+aa20.sec<-aa20.sec[!is.na(aa20.sec$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.sec$weight,data=aa20.sec)
+linkwh.discaa.aa20sec.reg<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[11,3]<-temp$coefficients[2]
+link2.discaa.regtab[11,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[11,6]<-summary(temp)$coefficients[2,4]
+
+#third aa sample
+aa20.third<-aa20[aa20$immgen>2,]
+aa20.third<-aa20.third[!is.na(aa20.third$weight),]
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20.third$weight,data=aa20.third)
+linkwh.discaa.aa20third.reg<-svyglm(linkwh~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(linkwh~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+link2.discaa.regtab[12,3]<-temp$coefficients[2]
+link2.discaa.regtab[12,4:5]<-confint(temp)[2,]
+link2.discaa.regtab[12,6]<-summary(temp)$coefficients[2,4]
+
+#stargazer table
+a<-linkbl.discaa.aa20.reg
+b<-linkbl.discaa.aa20first.reg
+c<-linkbl.discaa.aa20sec.reg
+d<-linkbl.discaa.aa20third.reg
+e<-linkla.discaa.aa20.reg
+f<-linkla.discaa.aa20first.reg
+g<-linkla.discaa.aa20sec.reg
+h<-linkla.discaa.aa20third.reg
+i<-linkwh.discaa.aa20.reg
+j<-linkwh.discaa.aa20first.reg
+k<-linkwh.discaa.aa20sec.reg
+l<-linkwh.discaa.aa20third.reg
+
+stargazer(a,b,c,d,e,f,g,h,i,j,k,l,
+          type="html",
+          out="Latino Black White Link Discrimination Gen.html")
+
+###plot###
+changeshape<-c(16,15,17,8,
+               16,15,17,8,
+               16,15,17,8)
+
+link2.discaa.gen.plot<-ggplot(link2.discaa.regtab,aes(x=coefficient,y=link,shape=factor(subgroup,level=level.order1)))+
+  geom_point(stat="identity",
+             size=3,
+             position=ggstance::position_dodgev(height = 0.3))+
+  scale_shape_manual(values=changeshape)+
+  geom_errorbarh(aes(xmax=upper,xmin=lower),
+                 height=0.3,
+                 position=ggstance::position_dodgev(height = 0.3))+
+  geom_vline(xintercept=0,linetype=2)+
+  labs(y="Linked Fate Group",title="")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(axis.title.x=element_blank())+
+  theme(text=element_text(size=20))+
+  labs(shape="generation")
+
+###combined plot###
+ggarrange(link2.discaa.part.plot,link2.discaa.gen.plot,nrow=2)
+
+```
+
+#Figure 4 and Appendix Tables A.8-A.9
+```{r}
+
+######################by partisanship###############
+#creating subsets by partisanship
+aa20rep<-aa20[aa20$part<0.5 & !is.na(aa20$part),]
+aa20ind<-aa20[aa20$part==0.5 & !is.na(aa20$part),]
+aa20dem<-aa20[aa20$part>0.5 & !is.na(aa20$part),]
+
+#regression table
+blmout.discaa.part.regtab<-as.data.frame(matrix(NA,nrow=12,ncol=6))
+colnames(blmout.discaa.part.regtab)<-c("outcome","partisanship","coefficient","lower","upper","p")
+blmout.discaa.part.regtab$partisanship<-rep(c("Full","Republican","Independent","Democrat"),3)
+blmout.discaa.part.regtab$outcome<-c(rep("support",4),
+                                    rep("responsible",4),
+                                    rep("benefit",4))
+
+###suppblm###
+#all
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$WEIGHT,data=aa20)
+suppblm.discaa.aa20.reg<-svyglm(suppblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[1,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[1,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[1,6]<-summary(temp)$coefficients[2,4]
+
+#rep
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20rep$WEIGHT,data=aa20rep)
+suppblm.discaa.aa20rep.reg<-svyglm(suppblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[2,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[2,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[2,6]<-summary(temp)$coefficients[2,4]
+
+#ind
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20ind$WEIGHT,data=aa20ind)
+suppblm.discaa.aa20ind.reg<-svyglm(suppblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[3,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[3,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[3,6]<-summary(temp)$coefficients[2,4]
+
+#dem
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20dem$WEIGHT,data=aa20dem)
+suppblm.discaa.aa20dem.reg<-svyglm(suppblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[4,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[4,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[4,6]<-summary(temp)$coefficients[2,4]
+
+
+###respblm###
+#all
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$WEIGHT,data=aa20)
+respblm.discaa.aa20.reg<-svyglm(respblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[5,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[5,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#rep
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20rep$WEIGHT,data=aa20rep)
+respblm.discaa.aa20rep.reg<-svyglm(respblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[6,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[6,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#ind
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20ind$WEIGHT,data=aa20ind)
+respblm.discaa.aa20ind.reg<-svyglm(respblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[7,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[7,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#dem
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20dem$WEIGHT,data=aa20dem)
+respblm.discaa.aa20dem.reg<-svyglm(respblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[8,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[8,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+###benblm###
+#all
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$WEIGHT,data=aa20)
+benblm.discaa.aa20.reg<-svyglm(benblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[9,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[9,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[9,6]<-summary(temp)$coefficients[2,4]
+
+#rep
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20rep$WEIGHT,data=aa20rep)
+benblm.discaa.aa20rep.reg<-svyglm(benblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[10,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[10,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[10,6]<-summary(temp)$coefficients[2,4]
+
+#ind
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20ind$WEIGHT,data=aa20ind)
+benblm.discaa.aa20ind.reg<-svyglm(benblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[11,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[11,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[11,6]<-summary(temp)$coefficients[2,4]
+
+#dem
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20dem$WEIGHT,data=aa20dem)
+benblm.discaa.aa20dem.reg<-svyglm(benblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.part.regtab[12,3]<-temp$coefficients[2]
+blmout.discaa.part.regtab[12,4:5]<-confint(temp)[2,]
+blmout.discaa.part.regtab[12,6]<-summary(temp)$coefficients[2,4]
+
+#write.csv(blmout.discaa.part.regtab,"blm outcomes part appendix tab.csv")
+
+#stargazer table
+a<-suppblm.discaa.aa20.reg
+b<-suppblm.discaa.aa20rep.reg
+c<-suppblm.discaa.aa20ind.reg
+d<-suppblm.discaa.aa20dem.reg
+
+e<-respblm.discaa.aa20.reg
+f<-respblm.discaa.aa20rep.reg
+g<-respblm.discaa.aa20ind.reg
+h<-respblm.discaa.aa20dem.reg
+
+i<-benblm.discaa.aa20.reg
+j<-benblm.discaa.aa20rep.reg
+k<-benblm.discaa.aa20ind.reg
+l<-benblm.discaa.aa20dem.reg
+
+stargazer(a,b,c,d,e,f,g,h,i,j,k,l,
+          type="html",
+          out="Supp. Resp. Ben. Part Reg Tab.html")
+
+
+###plot###
+changeshape<-c(16,15,17,8,
+               16,15,17,8,
+               16,15,17,8)
+
+blmout.discaa.part.plot<-ggplot(blmout.discaa.part.regtab,
+                            aes(x=coefficient,y=outcome,shape=factor(partisanship,level=level.order2)))+
+  geom_point(stat="identity",
+             size=3,
+             position=ggstance::position_dodgev(height = 0.4))+
+  scale_shape_manual(values=changeshape)+
+  geom_errorbarh(aes(xmax=upper,xmin=lower),
+                 height=0.3,
+                 position=ggstance::position_dodgev(height = 0.4))+
+  geom_vline(xintercept=0,linetype=2)+
+  labs(title="")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(axis.title.y=element_blank())+
+  theme(text=element_text(size=20))+
+  labs(shape="partisanship")
+
+########################by generation#############################
+
+#creating subsets by generation
+aa20first<-aa20[aa20$immgen==1 & !is.na(aa20$immgen),]
+aa20sec<-aa20[aa20$immgen==2 & !is.na(aa20$immgen),]
+aa20third<-aa20[aa20$immgen>2 & !is.na(aa20$immgen),]
+
+#regression table
+blmout.discaa.gen.regtab<-as.data.frame(matrix(NA,nrow=12,ncol=6))
+colnames(blmout.discaa.gen.regtab)<-c("outcome","generation","coefficient","lower","upper","p")
+blmout.discaa.gen.regtab$generation<-rep(c("Full","First","Second","Third"),3)
+blmout.discaa.gen.regtab$outcome<-c(rep("support",4),
+                                    rep("responsible",4),
+                                    rep("benefit",4))
+
+###suppblm###
+#all
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$WEIGHT,data=aa20)
+suppblm.discaa.aa20.reg<-svyglm(suppblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[1,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[1,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[1,6]<-summary(temp)$coefficients[2,4]
+
+#first
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20first$WEIGHT,data=aa20first)
+suppblm.discaa.aa20first.reg<-svyglm(suppblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[2,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[2,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[2,6]<-summary(temp)$coefficients[2,4]
+
+#sec
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20sec$WEIGHT,data=aa20sec)
+suppblm.discaa.aa20sec.reg<-svyglm(suppblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[3,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[3,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[3,6]<-summary(temp)$coefficients[2,4]
+
+#third
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20third$WEIGHT,data=aa20third)
+suppblm.discaa.aa20third.reg<-svyglm(suppblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(suppblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[4,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[4,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[4,6]<-summary(temp)$coefficients[2,4]
+
+
+###respblm###
+#all
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$WEIGHT,data=aa20)
+respblm.discaa.aa20.reg<-svyglm(respblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[5,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[5,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[5,6]<-summary(temp)$coefficients[2,4]
+
+#first
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20first$WEIGHT,data=aa20first)
+respblm.discaa.aa20first.reg<-svyglm(respblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[6,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[6,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[6,6]<-summary(temp)$coefficients[2,4]
+
+#sec
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20sec$WEIGHT,data=aa20sec)
+respblm.discaa.aa20sec.reg<-svyglm(respblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[7,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[7,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[7,6]<-summary(temp)$coefficients[2,4]
+
+#third
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20third$WEIGHT,data=aa20third)
+respblm.discaa.aa20third.reg<-svyglm(respblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(respblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[8,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[8,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[8,6]<-summary(temp)$coefficients[2,4]
+
+###benblm###
+#all
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20$WEIGHT,data=aa20)
+benblm.discaa.aa20.reg<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+part+female+inc+ed+immgen,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[9,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[9,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[9,6]<-summary(temp)$coefficients[2,4]
+
+#first
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20first$WEIGHT,data=aa20first)
+benblm.discaa.aa20first.reg<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[10,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[10,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[10,6]<-summary(temp)$coefficients[2,4]
+
+#sec
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20sec$WEIGHT,data=aa20sec)
+benblm.discaa.aa20sec.reg<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[11,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[11,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[11,6]<-summary(temp)$coefficients[2,4]
+
+#third
+des<-svydesign(~0,strata=NULL,variables=NULL,weights=aa20third$WEIGHT,data=aa20third)
+benblm.discaa.aa20third.reg<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+
+temp<-svyglm(benblm~discaa+age+part+female+inc+ed,des,family=gaussian(link="identity"))
+blmout.discaa.gen.regtab[12,3]<-temp$coefficients[2]
+blmout.discaa.gen.regtab[12,4:5]<-confint(temp)[2,]
+blmout.discaa.gen.regtab[12,6]<-summary(temp)$coefficients[2,4]
+
+write.csv(blmout.discaa.gen.regtab,"blm outcomes gen appendix tab.csv")
+
+#stargazer table
+a<-suppblm.discaa.aa20.reg
+b<-suppblm.discaa.aa20first.reg
+c<-suppblm.discaa.aa20sec.reg
+d<-suppblm.discaa.aa20third.reg
+
+e<-respblm.discaa.aa20.reg
+f<-respblm.discaa.aa20first.reg
+g<-respblm.discaa.aa20sec.reg
+h<-respblm.discaa.aa20third.reg
+
+i<-benblm.discaa.aa20.reg
+j<-benblm.discaa.aa20first.reg
+k<-benblm.discaa.aa20sec.reg
+l<-benblm.discaa.aa20third.reg
+
+stargazer(a,b,c,d,e,f,g,h,i,j,k,l,
+          type="html",
+          out="Supp. Resp. Ben. Gen Reg Tab.html")
+
+###plot###
+changeshape<-c(16,15,17,8,
+               16,15,17,8,
+               16,15,17,8)
+
+blmout.discaa.gen.plot<-ggplot(blmout.discaa.gen.regtab,
+                                aes(x=coefficient,y=outcome,shape=factor(generation,level=level.order1)))+
+  geom_point(stat="identity",
+             size=3,
+             position=ggstance::position_dodgev(height = 0.4))+
+  scale_shape_manual(values=changeshape)+
+  geom_errorbarh(aes(xmax=upper,xmin=lower),
+                 height=0.3,
+                 position=ggstance::position_dodgev(height = 0.4))+
+  geom_vline(xintercept=0,linetype=2)+
+  labs(title="")+
+  theme(plot.title=element_text(hjust=0.5))+
+  theme(axis.title.y=element_blank())+
+  theme(text=element_text(size=20))+
+  labs(shape="generation")
+
+###combined plot###
+ggarrange(blmout.discaa.part.plot,blmout.discaa.gen.plot,nrow=2)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

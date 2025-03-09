@@ -1,0 +1,856 @@
+---
+title: "aapi coalitions main analyses nov 2022"
+author: "Stephanie Chan"
+date: "11/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Read in data
+```{r}
+
+data<-read.csv("aapi coalitions data no zip nov 3 2022.csv",stringsAsFactors = F)
+
+#get rid of extra rows at top
+data<-data[3:nrow(data),]
+
+#get rid of respondents who do not consent
+d<-data[data$consent=="Yes, I give my consent.",]
+
+#get rid of respondents who do not identify as at least partially Asian, deleted people who checked all races
+d<-d[d$race=="Asian"|
+     d$race=="White,Asian"|
+     d$race=="Asian,Other"|
+     d$race=="Asian,Middle Eastern"|
+     d$race=="Hispanic or Latino,Asian"|
+     d$race=="Black or African American,Asian"|
+     d$race=="Asian,Native American" |
+     d$race=="White,Asian,Other" |
+     d$race=="White,Black or African American,Asian"|
+     d$race=="White,Hispanic or Latino,Asian"|
+     d$race=="Hispanic or Latino,Asian,Other"|
+     d$race=="Black or African American,Hispanic or Latino,Asian"|
+     d$race=="Black or African American,Asian,Native American",]
+
+#keeping only those who passed the attention check
+d<-d[d$attention1=="Extremely interested,Very interested",] 
+
+```
+
+##treatment variable
+```{r}
+
+#table(d$FL_6_DO) 
+
+d$treat<-NA
+d$treat[d$FL_6_DO=="treat1"]<-1
+d$treat[d$FL_6_DO=="treat2"]<-2
+d$treat[d$FL_6_DO=="treat3"]<-0
+
+#recoding those who did not get a narrative but were still in another condition to be t3
+d$treat[d$FL_6_DO=="BL_1z5uKt9r6f3OTCB"]<-0
+
+table(d$treat)
+
+```
+
+##demographic factors
+```{r}
+
+##age
+d$bornyear2<-as.numeric(d$bornyear)
+d$bornyear2[d$bornyear2==-99]<-NA
+d$age<-2022-d$bornyear2
+
+##gender
+d$fem<-NA
+d$fem[d$gender=="man"]<-0
+d$fem[d$gender=="woman"]<-1
+d$fem[d$gender=="nonbinary"]<-0
+d$fem[d$gender=="other"]<-0
+
+##education
+d$ed[d$education=="grade 1 to grade 8"]<-1
+d$ed[d$education=="some high school"]<-2
+d$ed[d$education=="high school graduate or GED"]<-3
+d$ed[d$education=="some college or 2 year degree"]<-4
+d$ed[d$education=="4 year college graduate"]<-5
+d$ed[d$education=="post-graduate education"]<-6
+
+d$ed<-as.numeric(d$ed)
+
+##income
+#coded so that less than $10,000 is 1
+#$10,000-$19,999 is 2
+#$20,000-$29,999 is 3
+#$30,000-$39,999 is 4
+#$40,000-$49,999 is 5
+#$50,000-$59,999 is 6
+#$60,000-$69,999 is 7
+#$70,000-$79,999 is 8
+#$80,000-$89,999 is 9
+#$90,000-$99,999 is 10
+#$100,000-$149,999 is 11
+#$150,000-$199,999 is 12
+#$200,000-$249,999 is 13
+#over $250,000 is 14
+d$inc<-NA
+d$inc[d$income=="less than $10,000"]<-1
+d$inc[d$income=="$10,000-$19,999"]<-2
+d$inc[d$income=="$20,000-$29,999"]<-3
+d$inc[d$income=="$30,000-$39,999"]<-4
+d$inc[d$income=="$40,000-$49,999"]<-5
+d$inc[d$income=="$50,000-$59,999"]<-6
+d$inc[d$income=="$60,000-$69,999"]<-7
+d$inc[d$income=="$70,000-$79,999"]<-8
+d$inc[d$income=="$80,000-$89,999"]<-9
+d$inc[d$income=="$90,000-$99,999"]<-10
+d$inc[d$income=="$100,000-$149,999"]<-11
+d$inc[d$income=="$150,000-$199,999"]<-12
+d$inc[d$income=="$200,000-$249,999"]<-13
+d$inc[d$income=="over $250,000"]<-14
+
+##immigration generation
+d$immgen<-NA
+d$immgen[d$immstat=="My parents, grandparents, and I were all born in the United States."]<-4
+d$immgen[d$immstat=="My parents and I were born in the United States but at least one of my grandparents was an immigrant."]<-3
+d$immgen[d$immstat=="I was born outside the United States and am not a U.S. citizen."]<-1
+d$immgen[d$immstat=="I was born in the United States and both of my parents are immigrants."]<-2
+d$immgen[d$immstat=="I was born in the United States and one of my parents is an immigrant."]<-2
+d$immgen[d$immstat=="I was born outside the United States and am a U.S. citizen."]<-1
+
+#noncitizen
+#1 if a non-citizen, 0 otherwise
+d$noncit<-NA
+d$noncit[d$immstat=="My parents, grandparents, and I were all born in the United States."]<-0
+d$noncit[d$immstat=="My parents and I were born in the United States but at least one of my grandparents was an immigrant."]<-0
+d$noncit[d$immstat=="I was born outside the United States and am not a U.S. citizen."]<-1
+d$noncit[d$immstat=="I was born in the United States and both of my parents are immigrants."]<-0
+d$noncit[d$immstat=="I was born in the United States and one of my parents is an immigrant."]<-0
+d$noncit[d$immstat=="I was born outside the United States and am a U.S. citizen."]<-0
+
+#partisanship (democrats are lower numbers, republicans are higher numbers)
+d$partisan<-NA
+d$partisan[d$partisan2=="Strong Republican"]<-7
+d$partisan[d$partisan2=="Not very strong Republican"]<-6
+d$partisan[d$partisan4=="Republican"]<-5
+d$partisan[d$partisan4=="No preference"]<-4
+d$partisan[d$partisan4=="Democratic"]<-3
+d$partisan[d$partisan3=="Not very strong Democrat"]<-2
+d$partisan[d$partisan3=="Strong Democrat"]<-1
+
+```
+
+##network measures
+```{r}
+
+#number of named alters
+d$netgen1<-NA
+d$netgen2<-NA
+d$netgen3<-NA
+d$netgen4<-NA
+d$netgen5<-NA
+
+for(a in 1:nrow(d)){
+  for(b in 56:60){
+    d[a,b+85]<-ifelse(d[a,b]!="",1,0)
+  }
+}
+
+d$netgen1[is.na(d$netgen1)]<-0
+d$netgen2[is.na(d$netgen2)]<-0
+d$netgen3[is.na(d$netgen3)]<-0
+d$netgen4[is.na(d$netgen4)]<-0
+d$netgen5[is.na(d$netgen5)]<-0
+
+d$netnum<-NA
+
+for(i in 1:nrow(d)){
+  d$netnum[i]<-sum(d[i,141:145])
+}
+
+#network care about participating in politics
+#disapprove is -1
+#would not care is 0
+#would approve is 1
+d$netpart1<-NA
+d$netpart1[d$X1_netpart=="They would disapprove."]<--1
+d$netpart1[d$X1_netpart=="They would not care."]<-0
+d$netpart1[d$X1_netpart=="They would approve."]<-1
+
+d$netpart2<-NA
+d$netpart2[d$X2_netpart=="They would disapprove."]<--1
+d$netpart2[d$X2_netpart=="They would not care."]<-0
+d$netpart2[d$X2_netpart=="They would approve."]<-1
+
+d$netpart3<-NA
+d$netpart3[d$X3_netpart=="They would disapprove."]<--1
+d$netpart3[d$X3_netpart=="They would not care."]<-0
+d$netpart3[d$X3_netpart=="They would approve."]<-1
+
+d$netpart4<-NA
+d$netpart4[d$X4_netpart=="They would disapprove."]<--1
+d$netpart4[d$X4_netpart=="They would not care."]<-0
+d$netpart4[d$X4_netpart=="They would approve."]<-1
+
+d$netpart5<-NA
+d$netpart5[d$X5_netpart=="They would disapprove."]<--1
+d$netpart5[d$X5_netpart=="They would not care."]<-0
+d$netpart5[d$X5_netpart=="They would approve."]<-1
+
+d$netpart<-NA
+for(i in 1:nrow(d)){
+  d[i,152]<-sum(d[i,147:151],na.rm=TRUE) 
+}
+
+#network care about support for blm
+#disapprove is -1
+#would not care is 0
+#would approve is 1
+d$netblm1<-NA
+d$netblm1[d$X1_netsupp1=="They would disapprove."]<--1
+d$netblm1[d$X1_netsupp1=="They would not care."]<-0
+d$netblm1[d$X1_netsupp1=="They would approve."]<-1
+
+d$netblm2<-NA
+d$netblm2[d$X2_netsupp1=="They would disapprove."]<--1
+d$netblm2[d$X2_netsupp1=="They would not care."]<-0
+d$netblm2[d$X2_netsupp1=="They would approve."]<-1
+
+d$netblm3<-NA
+d$netblm3[d$X3_netsupp1=="They would disapprove."]<--1
+d$netblm3[d$X3_netsupp1=="They would not care."]<-0
+d$netblm3[d$X3_netsupp1=="They would approve."]<-1
+
+d$netblm4<-NA
+d$netblm4[d$X4_netsupp1=="They would disapprove."]<--1
+d$netblm4[d$X4_netsupp1=="They would not care."]<-0
+d$netblm4[d$X4_netsupp1=="They would approve."]<-1
+
+d$netblm5<-NA
+d$netblm5[d$X5_netsupp1=="They would disapprove."]<--1
+d$netblm5[d$X5_netsupp1=="They would not care."]<-0
+d$netblm5[d$X5_netsupp1=="They would approve."]<-1
+
+d$netblm<-NA
+for(i in 1:nrow(d)){
+  d[i,158]<-sum(d[i,153:157],na.rm=TRUE) 
+}
+
+#network care about support for Stop Asian Hate
+#disapprove is -1
+#would not care is 0
+#would approve is 1
+d$netstop1<-NA
+d$netstop1[d$X1_netsupp2=="They would disapprove."]<--1
+d$netstop1[d$X1_netsupp2=="They would not care."]<-0
+d$netstop1[d$X1_netsupp2=="They would approve."]<-1
+
+d$netstop2<-NA
+d$netstop2[d$X2_netsupp2=="They would disapprove."]<--1
+d$netstop2[d$X2_netsupp2=="They would not care."]<-0
+d$netstop2[d$X2_netsupp2=="They would approve."]<-1
+
+d$netstop3<-NA
+d$netstop3[d$X3_netsupp2=="They would disapprove."]<--1
+d$netstop3[d$X3_netsupp2=="They would not care."]<-0
+d$netstop3[d$X3_netsupp2=="They would approve."]<-1
+
+d$netstop4<-NA
+d$netstop4[d$X4_netsupp2=="They would disapprove."]<--1
+d$netstop4[d$X4_netsupp2=="They would not care."]<-0
+d$netstop4[d$X4_netsupp2=="They would approve."]<-1
+
+d$netstop5<-NA
+d$netstop5[d$X5_netsupp2=="They would disapprove."]<--1
+d$netstop5[d$X5_netsupp2=="They would not care."]<-0
+d$netstop5[d$X5_netsupp2=="They would approve."]<-1
+
+d$netstop<-NA
+for(i in 1:nrow(d)){
+  d[i,164]<-sum(d[i,159:163],na.rm=TRUE) 
+}
+
+```
+
+##outcomes
+political participation
+```{r}
+
+#intend_1-attend local meeting
+d$intend1[d$intend_1=="-99"]<-NA
+d$intend1[d$intend_1=="Yes"]<-1
+d$intend1[d$intend_1=="No"]<-0
+
+#intend_2-put up political sign
+d$intend2[d$intend_2=="-99"]<-NA
+d$intend2[d$intend_2=="Yes"]<-1
+d$intend2[d$intend_2=="No"]<-0
+
+#intend_3-work for campaign or candidate
+d$intend3[d$intend_3=="-99"]<-NA
+d$intend3[d$intend_3=="Yes"]<-1
+d$intend3[d$intend_3=="No"]<-0
+
+#intend_4-protest
+d$intend4[d$intend_4=="-99"]<-NA
+d$intend4[d$intend_4=="Yes"]<-1
+d$intend4[d$intend_4=="No"]<-0
+
+#intend_5-contact public official
+d$intend5[d$intend_5=="-99"]<-NA
+d$intend5[d$intend_5=="Yes"]<-1
+d$intend5[d$intend_5=="No"]<-0
+
+#intend_6-donate money
+d$intend6[d$intend_6=="-99"]<-NA
+d$intend6[d$intend_6=="Yes"]<-1
+d$intend6[d$intend_6=="No"]<-0
+
+#intend_7-vote
+d$intend7[d$intend_7=="-99"]<-NA
+d$intend7[d$intend_7=="Yes"]<-1
+d$intend7[d$intend_7=="No"]<-0
+
+#intend_8-discuss politics
+d$intend8[d$intend_8=="-99"]<-NA
+d$intend8[d$intend_8=="Yes"]<-1
+d$intend8[d$intend_8=="No"]<-0
+
+```
+
+polmove
+How much do you support or oppose the following policies, social movements, or organizations?
+1 indicates strongly support, 0 indicates strongly oppose
+```{r}
+
+#polmove_1 affirmative action
+d$pmove1<-NA
+d$pmove1[d$polmove_1=="Strongly oppose"]<-0
+d$pmove1[d$polmove_1=="Oppose"]<-1/4
+d$pmove1[d$polmove_1=="Neither support or oppose"]<-2/4
+d$pmove1[d$polmove_1=="Support"]<-3/4
+d$pmove1[d$polmove_1=="Strongly support"]<-4/4
+
+#polmove_2 pathway to citizenship
+d$pmove2<-NA
+d$pmove2[d$polmove_2=="Strongly oppose"]<-0
+d$pmove2[d$polmove_2=="Oppose"]<-1/4
+d$pmove2[d$polmove_2=="Neither support or oppose"]<-2/4
+d$pmove2[d$polmove_2=="Support"]<-3/4
+d$pmove2[d$polmove_2=="Strongly support"]<-4/4
+
+#polmove_3 government provided healthcare
+d$pmove3<-NA
+d$pmove3[d$polmove_3=="Strongly oppose"]<-0
+d$pmove3[d$polmove_3=="Oppose"]<-1/4
+d$pmove3[d$polmove_3=="Neither support or oppose"]<-2/4
+d$pmove3[d$polmove_3=="Support"]<-3/4
+d$pmove3[d$polmove_3=="Strongly support"]<-4/4
+
+#polmove_4 social security
+d$pmove4<-NA
+d$pmove4[d$polmove_4=="Strongly oppose"]<-0
+d$pmove4[d$polmove_4=="Oppose"]<-1/4
+d$pmove4[d$polmove_4=="Neither support or oppose"]<-2/4
+d$pmove4[d$polmove_4=="Support"]<-3/4
+d$pmove4[d$polmove_4=="Strongly support"]<-4/4
+
+#polmove_5 blm
+d$pmove5<-NA
+d$pmove5[d$polmove_5=="Strongly oppose"]<-0
+d$pmove5[d$polmove_5=="Oppose"]<-1/4
+d$pmove5[d$polmove_5=="Neither support or oppose"]<-2/4
+d$pmove5[d$polmove_5=="Support"]<-3/4
+d$pmove5[d$polmove_5=="Strongly support"]<-4/4
+
+#polmove_6 reparations for descendants of enslaved persons
+d$pmove6<-NA
+d$pmove6[d$polmove_6=="Strongly oppose"]<-0
+d$pmove6[d$polmove_6=="Oppose"]<-1/4
+d$pmove6[d$polmove_6=="Neither support or oppose"]<-2/4
+d$pmove6[d$polmove_6=="Support"]<-3/4
+d$pmove6[d$polmove_6=="Strongly support"]<-4/4
+
+#polmove_7 stop asian hate
+d$pmove7<-NA
+d$pmove7[d$polmove_7=="Strongly oppose"]<-0
+d$pmove7[d$polmove_7=="Oppose"]<-1/4
+d$pmove7[d$polmove_7=="Neither support or oppose"]<-2/4
+d$pmove7[d$polmove_7=="Support"]<-3/4
+d$pmove7[d$polmove_7=="Strongly support"]<-4/4
+
+#polmove_8 nra
+d$pmove8<-NA
+d$pmove8[d$polmove_8=="Strongly oppose"]<-0
+d$pmove8[d$polmove_8=="Oppose"]<-1/4
+d$pmove8[d$polmove_8=="Neither support or oppose"]<-2/4
+d$pmove8[d$polmove_8=="Support"]<-3/4
+d$pmove8[d$polmove_8=="Strongly support"]<-4/4
+
+#polmove_9 no exceptions abortion ban
+d$pmove9<-NA
+d$pmove9[d$polmove_9=="Strongly oppose"]<-0
+d$pmove9[d$polmove_9=="Oppose"]<-1/4
+d$pmove9[d$polmove_9=="Neither support or oppose"]<-2/4
+d$pmove9[d$polmove_9=="Support"]<-3/4
+d$pmove9[d$polmove_9=="Strongly support"]<-4/4
+
+```
+
+get info
+```{r}
+
+#getinfo_1 (multiracial coalition to fight discrimination)
+d$info1[d$getinfo_1=="Yes"]<-1
+d$info1[d$getinfo_1=="No"]<-0
+d$info1[d$getinfo_1==""]<-NA
+
+#getinfo_2 (asian americans against discrimination)
+d$info2[d$getinfo_2=="Yes"]<-1
+d$info2[d$getinfo_2=="No"]<-0
+d$info2[d$getinfo_2==""]<-NA
+
+#getinfo_3 (asian americans against affirmative action)
+d$info3[d$getinfo_3=="Yes"]<-1
+d$info3[d$getinfo_3=="No"]<-0
+d$info3[d$getinfo_3==""]<-NA
+
+#getinfo_4 (blm)
+d$info4[d$getinfo_4=="Yes"]<-1
+d$info4[d$getinfo_4=="No"]<-0
+d$info4[d$getinfo_4==""]<-NA
+
+#getinfo_5 (cair campaign to end muslim ban)
+d$info5[d$getinfo_5=="Yes"]<-1
+d$info5[d$getinfo_5=="No"]<-0
+d$info5[d$getinfo_5==""]<-NA
+
+```
+
+idmag
+How much do you identify as or with
+```{r}
+
+#idmag_1 person of color
+d$idmag1<-NA
+d$idmag1[d$idmag_1=="None at all"]<-0
+d$idmag1[d$idmag_1=="A little"]<-1/3
+d$idmag1[d$idmag_1=="Some"]<-2/3
+d$idmag1[d$idmag_1=="A lot"]<-3/3
+
+#idmag_2 immigrant
+d$idmag2<-NA
+d$idmag2[d$idmag_2=="None at all"]<-0
+d$idmag2[d$idmag_2=="A little"]<-1/3
+d$idmag2[d$idmag_2=="Some"]<-2/3
+d$idmag2[d$idmag_2=="A lot"]<-3/3
+
+#idmag_3 self-identified gender
+d$idmag3<-NA
+d$idmag3[d$idmag_3=="None at all"]<-0
+d$idmag3[d$idmag_3=="A little"]<-1/3
+d$idmag3[d$idmag_3=="Some"]<-2/3
+d$idmag3[d$idmag_3=="A lot"]<-3/3
+
+#idmag_4 asian american
+d$idmag4<-NA
+d$idmag4[d$idmag_4=="None at all"]<-0
+d$idmag4[d$idmag_4=="A little"]<-1/3
+d$idmag4[d$idmag_4=="Some"]<-2/3
+d$idmag4[d$idmag_4=="A lot"]<-3/3
+
+#idmag_5 national origin
+d$idmag5<-NA
+d$idmag5[d$idmag_5=="None at all"]<-0
+d$idmag5[d$idmag_5=="A little"]<-1/3
+d$idmag5[d$idmag_5=="Some"]<-2/3
+d$idmag5[d$idmag_5=="A lot"]<-3/3
+
+```
+
+
+linked fate
+What generally happens to the following groups in this country will have something to do with what happens in my life:
+```{r}
+
+#white
+d$link1<-NA
+d$link1[d$linkfate_1=="None at all"]<-0/3
+d$link1[d$linkfate_1=="A little"]<-1/3
+d$link1[d$linkfate_1=="Some"]<-2/3
+d$link1[d$linkfate_1=="A lot"]<-3/3
+
+#Black people
+d$link2<-NA
+d$link2[d$linkfate_2=="None at all"]<-0/3
+d$link2[d$linkfate_2=="A little"]<-1/3
+d$link2[d$linkfate_2=="Some"]<-2/3
+d$link2[d$linkfate_2=="A lot"]<-3/3
+
+#Asian Americans
+d$link3<-NA
+d$link3[d$linkfate_3=="None at all"]<-0/3
+d$link3[d$linkfate_3=="A little"]<-1/3
+d$link3[d$linkfate_3=="Some"]<-2/3
+d$link3[d$linkfate_3=="A lot"]<-3/3
+
+#Latinos
+d$link4<-NA
+d$link4[d$linkfate_4=="None at all"]<-0/3
+d$link4[d$linkfate_4=="A little"]<-1/3
+d$link4[d$linkfate_4=="Some"]<-2/3
+d$link4[d$linkfate_4=="A lot"]<-3/3
+
+```
+
+linked fate discrimination
+How much do you think discrimination against Asian Americans is connected to discrimination against:
+```{r}
+
+#white
+d$linkdis1<-NA
+d$linkdis1[d$linkfatedis_1=="None at all"]<-0/3
+d$linkdis1[d$linkfatedis_1=="A little"]<-1/3
+d$linkdis1[d$linkfatedis_1=="Some"]<-2/3
+d$linkdis1[d$linkfatedis_1=="A lot"]<-3/3
+
+#Black people
+d$linkdis2<-NA
+d$linkdis2[d$linkfatedis_2=="None at all"]<-0/3
+d$linkdis2[d$linkfatedis_2=="A little"]<-1/3
+d$linkdis2[d$linkfatedis_2=="Some"]<-2/3
+d$linkdis2[d$linkfatedis_2=="A lot"]<-3/3
+
+#Women
+d$linkdis3<-NA
+d$linkdis3[d$linkfatedis_3=="None at all"]<-0/3
+d$linkdis3[d$linkfatedis_3=="A little"]<-1/3
+d$linkdis3[d$linkfatedis_3=="Some"]<-2/3
+d$linkdis3[d$linkfatedis_3=="A lot"]<-3/3
+
+#Latinos
+d$linkdis4<-NA
+d$linkdis4[d$linkfatedis_4=="None at all"]<-0/3
+d$linkdis4[d$linkfatedis_4=="A little"]<-1/3
+d$linkdis4[d$linkfatedis_4=="Some"]<-2/3
+d$linkdis4[d$linkfatedis_4=="A lot"]<-3/3
+
+#Muslim Americans
+d$linkdis5<-NA
+d$linkdis5[d$linkfatedis_5=="None at all"]<-0/3
+d$linkdis5[d$linkfatedis_5=="A little"]<-1/3
+d$linkdis5[d$linkfatedis_5=="Some"]<-2/3
+d$linkdis5[d$linkfatedis_5=="A lot"]<-3/3
+
+```
+
+closeness
+coded so that 0 is "Not close at all" and 1 is "Very close"
+How close do you feel your ideas, interests, and feelings are to people who are:
+```{r}
+
+#white people
+d$close1<-NA
+d$close1[d$closeness_1=="Not close at all"]<-0/3
+d$close1[d$closeness_1=="Not too close"]<-1/3
+d$close1[d$closeness_1=="Fairly close"]<-2/3
+d$close1[d$closeness_1=="Very close"]<-3/3
+
+#black people
+d$close2<-NA
+d$close2[d$closeness_2=="Not close at all"]<-0/3
+d$close2[d$closeness_2=="Not too close"]<-1/3
+d$close2[d$closeness_2=="Fairly close"]<-2/3
+d$close2[d$closeness_2=="Very close"]<-3/3
+
+#asian americans
+d$close3<-NA
+d$close3[d$closeness_3=="Not close at all"]<-0/3
+d$close3[d$closeness_3=="Not too close"]<-1/3
+d$close3[d$closeness_3=="Fairly close"]<-2/3
+d$close3[d$closeness_3=="Very close"]<-3/3
+
+#latinos
+d$close4<-NA
+d$close4[d$closeness_4=="Not close at all"]<-0/3
+d$close4[d$closeness_4=="Not too close"]<-1/3
+d$close4[d$closeness_4=="Fairly close"]<-2/3
+d$close4[d$closeness_4=="Very close"]<-3/3
+
+```
+
+discrimination
+coded such that 0 is "none at all" and 1 is "a great deal"
+```{r}
+#discrimination towards white people
+d$dis1<-NA
+d$dis1[d$discrimination_1=="None at all"]<-0/4
+d$dis1[d$discrimination_1=="A little"]<-1/4
+d$dis1[d$discrimination_1=="A moderate amount"]<-2/4
+d$dis1[d$discrimination_1=="A lot"]<-3/4
+d$dis1[d$discrimination_1=="A great deal"]<-4/4
+
+#discrimination towards black people
+d$dis2<-NA
+d$dis2[d$discrimination_2=="None at all"]<-0/4
+d$dis2[d$discrimination_2=="A little"]<-1/4
+d$dis2[d$discrimination_2=="A moderate amount"]<-2/4
+d$dis2[d$discrimination_2=="A lot"]<-3/4
+d$dis2[d$discrimination_2=="A great deal"]<-4/4
+
+#discrimination towards asian americans
+d$dis3<-NA
+d$dis3[d$discrimination_3=="None at all"]<-0/4
+d$dis3[d$discrimination_3=="A little"]<-1/4
+d$dis3[d$discrimination_3=="A moderate amount"]<-2/4
+d$dis3[d$discrimination_3=="A lot"]<-3/4
+d$dis3[d$discrimination_3=="A great deal"]<-4/4
+
+#discrimination towards immigrants
+d$dis4<-NA
+d$dis4[d$discrimination_4=="None at all"]<-0/4
+d$dis4[d$discrimination_4=="A little"]<-1/4
+d$dis4[d$discrimination_4=="A moderate amount"]<-2/4
+d$dis4[d$discrimination_4=="A lot"]<-3/4
+d$dis4[d$discrimination_4=="A great deal"]<-4/4
+
+#discrimination towards latinos
+d$dis5<-NA
+d$dis5[d$discrimination_5=="None at all"]<-0/4
+d$dis5[d$discrimination_5=="A little"]<-1/4
+d$dis5[d$discrimination_5=="A moderate amount"]<-2/4
+d$dis5[d$discrimination_5=="A lot"]<-3/4
+d$dis5[d$discrimination_5=="A great deal"]<-4/4
+
+#discrimination towards lgbtq
+d$dis6<-NA
+d$dis6[d$discrimination_6=="None at all"]<-0/4
+d$dis6[d$discrimination_6=="A little"]<-1/4
+d$dis6[d$discrimination_6=="A moderate amount"]<-2/4
+d$dis6[d$discrimination_6=="A lot"]<-3/4
+d$dis6[d$discrimination_6=="A great deal"]<-4/4
+
+#discrimination towards muslims
+d$dis7<-NA
+d$dis7[d$discrimination_7=="None at all"]<-0/4
+d$dis7[d$discrimination_7=="A little"]<-1/4
+d$dis7[d$discrimination_7=="A moderate amount"]<-2/4
+d$dis7[d$discrimination_7=="A lot"]<-3/4
+d$dis7[d$discrimination_7=="A great deal"]<-4/4
+
+#discrimination towards women
+d$dis8<-NA
+d$dis8[d$discrimination_8=="None at all"]<-0/4
+d$dis8[d$discrimination_8=="A little"]<-1/4
+d$dis8[d$discrimination_8=="A moderate amount"]<-2/4
+d$dis8[d$discrimination_8=="A lot"]<-3/4
+d$dis8[d$discrimination_8=="A great deal"]<-4/4
+
+```
+
+resentment
+racial resentment measures, coded -1 to 1
+recoded such that -1 is least progressive and 1 is most progressive
+0 is neither agree nor disagre
+
+```{r}
+
+#resentment1: I am angry that racism exists
+d$resent1<-NA
+d$resent1[d$resentment_1=="Strongly Disagree"]<--3/3
+d$resent1[d$resentment_1=="Disagree"]<--2/3
+d$resent1[d$resentment_1=="Somewhat disagree"]<--1/3
+d$resent1[d$resentment_1=="Neither agree nor disagree"]<-0/3
+d$resent1[d$resentment_1=="Somewhat agree"]<-1/3
+d$resent1[d$resentment_1=="Agree"]<-2/3
+d$resent1[d$resentment_1=="Strongly agree"]<-3/3
+
+#resentment 2: White people in the United States have certain advantages because of the color of their skin.
+d$resent2<-NA
+d$resent2[d$resentment_2=="Strongly Disagree"]<--3/3
+d$resent2[d$resentment_2=="Disagree"]<--2/3
+d$resent2[d$resentment_2=="Somewhat disagree"]<--1/3
+d$resent2[d$resentment_2=="Neither agree nor disagree"]<-0/3
+d$resent2[d$resentment_2=="Somewhat agree"]<-1/3
+d$resent2[d$resentment_2=="Agree"]<-2/3
+d$resent2[d$resentment_2=="Strongly agree"]<-3/3
+
+#resentment 3: I often find myself fearful of people of other races.-reverse coded
+d$resent3<-NA
+d$resent3[d$resentment_3=="Strongly Disagree"]<-3/3
+d$resent3[d$resentment_3=="Disagree"]<-2/3
+d$resent3[d$resentment_3=="Somewhat disagree"]<-1/3
+d$resent3[d$resentment_3=="Neither agree nor disagree"]<-0/3
+d$resent3[d$resentment_3=="Somewhat agree"]<--1/3
+d$resent3[d$resentment_3=="Agree"]<--2/3
+d$resent3[d$resentment_3=="Strongly agree"]<--3/3
+
+#resentment 4: Racial problems in the United States are rare, isolated situations.-reverse coded
+d$resent4<-NA
+d$resent4[d$resentment_4=="Strongly Disagree"]<-3/3
+d$resent4[d$resentment_4=="Disagree"]<-2/3
+d$resent4[d$resentment_4=="Somewhat disagree"]<-1/3
+d$resent4[d$resentment_4=="Neither agree nor disagree"]<-0/3
+d$resent4[d$resentment_4=="Somewhat agree"]<--1/3
+d$resent4[d$resentment_4=="Agree"]<--2/3
+d$resent4[d$resentment_4=="Strongly agree"]<--3/3
+
+```
+
+manipulation checks
+manipulation 1
+How much do you agree with the following statements? - Asian Americans face similar levels of discrimination to other racial minority groups in the COVID-19 era.
+```{r}
+
+d$mani1<-NA
+d$mani1[d$manipulation_1=="Disagree strongly"]<-0
+d$mani1[d$manipulation_1=="Disagree somewhat"]<-1/4
+d$mani1[d$manipulation_1=="Neither agree nor disagree"]<-2/4
+d$mani1[d$manipulation_1=="Agree somewhat"]<-3/4
+d$mani1[d$manipulation_1=="Agree strongly"]<-4/4
+
+```
+
+manipulation 2
+How much do you agree with the following statements? - Asian Americans face discrimination in the COVID-19 era.
+```{r}
+
+d$mani2<-NA
+d$mani2[d$manipulation_2=="Disagree strongly"]<-0
+d$mani2[d$manipulation_2=="Disagree somewhat"]<-1/4
+d$mani2[d$manipulation_2=="Neither agree nor disagree"]<-2/4
+d$mani2[d$manipulation_2=="Agree somewhat"]<-3/4
+d$mani2[d$manipulation_2=="Agree strongly"]<-4/4
+
+```
+
+balance test
+none of the differences are statiscally significant (nothing p<0.1)
+```{r}
+
+#gender
+t.test(d$fem[d$treat==1],d$fem[d$treat==0])
+t.test(d$fem[d$treat==2],d$fem[d$treat==0])
+
+#education
+t.test(d$ed[d$treat==1],d$ed[d$treat==0])
+t.test(d$ed[d$treat==2],d$ed[d$treat==0])
+
+#partisanship
+t.test(d$partisan[d$treat==1],d$partisan[d$treat==0])
+t.test(d$partisan[d$treat==2],d$partisan[d$treat==0])
+
+#age
+t.test(d$age[d$treat==1],d$age[d$treat==0])
+t.test(d$age[d$treat==2],d$age[d$treat==0])
+
+#income
+t.test(d$inc[d$treat==1],d$inc[d$treat==0])
+t.test(d$inc[d$treat==2],d$inc[d$treat==0])
+
+#immigrant generation
+t.test(d$immgen[d$treat==1],d$immgen[d$treat==0])
+t.test(d$immgen[d$treat==2],d$immgen[d$treat==0])
+
+#noncitizen
+t.test(d$noncit[d$treat==1],d$noncit[d$treat==0])
+t.test(d$noncit[d$treat==2],d$noncit[d$treat==0])
+
+```
+
+write out recoded data
+```{r}
+
+#write.csv(d,"aapi coalitions data recoded nov 3 2022.csv")
+
+```
+
+
+checking correlation between liberal/conservative and dem/rep
+```{r}
+
+
+d$myideo<-d$ideo
+d$myideo<-NA
+d$myideo[d$ideo=="Very conservative" ]<-7
+d$myideo[d$ideo=="Conservative"]<-6
+d$myideo[d$ideo=="Somewhat conservative"]<-5
+d$myideo[d$ideo=="Moderate or middle of the road"]<-4
+d$myideo[d$ideo=="Somewhat liberal"]<-3
+d$myideo[d$ideo=="Liberal"]<-2
+d$myideo[d$ideo=="Very liberal"]<-1  
+#d$myideo[d$ideo=="Not sure"]<-   
+
+cor(d$myideo,d$partisan,use="complete.obs")
+
+cor(d$myideo[d$immgen==1],d$partisan[d$immgen==1],use="complete.obs")
+
+nrow(d[d$myideo=="Not sure",])
+
+nrow(d[d$myideo=="Not sure" & d$immgen==1,])/nrow(d[d$immgen==1,])
+nrow(d[d$myideo=="Not sure" & d$immgen==2,])/nrow(d[d$immgen==2,])
+nrow(d[d$myideo=="Not sure" & d$immgen==3,])/nrow(d[d$immgen==3,])
+
+```
+
+checking scaling racial resentment scale
+```{r}
+library(ltm)
+
+trial<-data.frame(cbind(d$resent1,d$resent2,d$resent3,d$resent4))
+
+alpha<-cronbach.alpha(trial,na.rm=TRUE,standardized=TRUE) #cronbach's alpha was: 0.357, standardized as 0.377
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

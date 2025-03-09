@@ -1,0 +1,217 @@
+---
+title: "strained solidarity text analysis"
+output: html_document
+date: "2023-04-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+packages
+```{r}
+
+#install.packages("ggplot2")
+library(ggplot2)
+
+#install.packages("ggpubr")
+library(ggpubr)
+
+#install.packages("stringr")        
+library("stringr") 
+
+```
+
+
+read in data
+```{r}
+
+ereact<-read.csv("coder1 react.csv")
+esumm<-read.csv("coder1 summ.csv")
+
+sreact<-read.csv("coder2 react.csv")
+ssumm<-read.csv("coder2 summ.csv")
+
+colnames(ereact)<-c("e.react.rid","e.react.treat1react","e.react.treat2react",
+                    "e.react.Mention_Anti_Asian","e.react.Mention_Racism_Against_POC", 
+                    "e.react.Not_Surprised","e.react.Anger","e.react.Worry.fear.anxiety",
+                    "e.react.Sadness","e.react.Inattentive","e.react.Unsure","e.react.Notes")
+
+colnames(esumm)<-c("e.summ.rid","e.summ.treat1summ","e.summ.treat2summ",
+                    "e.summ.Mention_Anti_Asian","e.summ.Mention_Racism_Against_POC", 
+                    "e.summ.Not_Surprised","e.summ.Anger","e.summ.Worry.fear.anxiety",
+                    "e.summ.Sadness","e.summ.Inattentive","e.summ.Unsure","e.summ.Notes")
+
+colnames(sreact)<-c("s.react.rid","s.react.treat1react","s.react.treat2react",
+                    "s.react.Mention_Anti_Asian","s.react.Mention_Racism_Against_POC", 
+                    "s.react.Not_Surprised","s.react.Anger","s.react.Worry.fear.anxiety",
+                    "s.react.Sadness","s.react.Inattentive","s.react.Unsure","s.react.Notes")
+
+colnames(ssumm)<-c("s.summ.rid","s.summ.treat1summ","s.summ.treat2summ",
+                    "s.summ.Mention_Anti_Asian","s.summ.Mention_Racism_Against_POC", 
+                    "s.summ.Not_Surprised","s.summ.Anger","s.summ.Worry.fear.anxiety",
+                    "s.summ.Sadness","s.summ.Inattentive","s.summ.Unsure","s.summ.Notes")
+
+
+```
+
+###merging###
+```{r}
+
+###putting it all into a dataframe with demographics###
+dat<-read.csv("aapi coalitions data recoded nov 3 2022.csv",stringsAsFactors = F)
+
+###pulling in the final codings###
+mentionaa.react.correct<-read.csv("mention anti asian racism react mismatches.csv")
+
+mentionaa.summ.correct<-read.csv("mention anti asian racism summ mismatches.csv")
+
+mentionpoc.react.correct<-read.csv("mention poc racism react mismatches.csv")
+
+mentionpoc.summ.correct<-read.csv("mention poc racism summ mismatches.csv")
+
+worried.react.correct<-read.csv("worried react mismatches.csv")
+
+worried.summ.correct<-read.csv("worried summ mismatches.csv")
+
+nsurprise.react.correct<-read.csv("not surprised react mismatches.csv")
+
+nsurprise.summ.correct<-read.csv("not surprised summ mismatches.csv")
+
+###pulling in to match up with all of the demographics###
+#mention anti-asian racism, react
+temp<-merge(sreact,mentionaa.react.correct,by.x="s.react.rid",by.y="id",all.x=TRUE)
+
+temp$react.aaracism<-ifelse(is.na(temp$final),
+  temp$s.react.Mention_Anti_Asian,temp$final)
+
+dat2<-merge(dat,temp,by.x="ResponseId",by.y="s.react.rid",all.x=TRUE)
+
+dat2<-dat2[,c(1:219,237)]
+
+#mention anti-asian racism, summ
+temp<-merge(ssumm,mentionaa.summ.correct,by.x="s.summ.rid",by.y="id",all.x=TRUE)
+
+temp$summ.aaracism<-ifelse(is.na(temp$final),temp$s.summ.Mention_Anti_Asian, temp$final)
+
+dat3<-merge(dat2,temp,by.x="ResponseId",by.y="s.summ.rid",all.x=TRUE)
+
+dat3<-dat3[,c(1:220,238)]
+
+#mention poc racism, react
+temp<-merge(sreact,mentionpoc.react.correct,by.x="s.react.rid",by.y="id",all.x=TRUE)
+
+temp$react.poc<-ifelse(is.na(temp$final),
+  temp$s.react.Mention_Racism_Against_POC,temp$final)
+
+dat4<-merge(dat3,temp,by.x="ResponseId",by.y="s.react.rid",all.x=TRUE)
+
+dat4<-dat4[,c(1:221,239)]
+
+#mention poc racism, summ
+temp<-merge(ssumm,mentionpoc.summ.correct,by.x="s.summ.rid",by.y="id",all.x=TRUE)
+
+temp$summ.poc<-ifelse(is.na(temp$final),
+  temp$s.summ.Mention_Racism_Against_POC,temp$final)
+
+dat5<-merge(dat4,temp,by.x="ResponseId",by.y="s.summ.rid",all.x=TRUE)
+
+dat5<-dat5[,c(1:222,240)]
+
+#worried,react
+temp<-merge(sreact,worried.react.correct,by.x="s.react.rid",by.y="id",all.x=TRUE)
+
+temp$react.worried<-ifelse(is.na(temp$final),
+  temp$s.react.Worry.fear.anxiety,temp$final)
+
+dat6<-merge(dat5,temp,by.x="ResponseId",by.y="s.react.rid",all.x=TRUE)
+
+dat6<-dat6[,c(1:223,241)]
+
+#worried, summ
+temp<-merge(ssumm,worried.summ.correct,by.x="s.summ.rid",by.y="id",all.x=TRUE)
+
+temp$summ.worried<-ifelse(is.na(temp$final),
+  temp$s.summ.Worry.fear.anxiety,temp$final)
+
+dat7<-merge(dat6,temp,by.x="ResponseId",by.y="s.summ.rid",all.x=TRUE)
+
+dat7<-dat7[,c(1:224,242)]
+
+#not surprised, react
+temp<-merge(sreact,nsurprise.react.correct,by.x="s.react.rid",by.y="id",all.x=TRUE)
+
+temp$react.nsurprise<-ifelse(is.na(temp$final),
+  temp$s.react.Not_Surprised,temp$final)
+
+dat8<-merge(dat7,temp,by.x="ResponseId",by.y="s.react.rid",all.x=TRUE)
+
+dat8<-dat8[,c(1:225,243)]
+
+#not surprised, summ
+temp<-merge(ssumm,nsurprise.summ.correct,by.x="s.summ.rid",by.y="id",all.x=TRUE)
+
+temp$summ.nsurprise<-ifelse(is.na(temp$final),
+  temp$s.summ.Not_Surprised,temp$final)
+
+dat9<-merge(dat8,temp,by.x="ResponseId",by.y="s.summ.rid",all.x=TRUE)
+
+dat9<-dat9[,c(1:226,244)]
+
+datall<-dat9
+
+```
+
+#table 1
+```{r}
+
+
+table1<-as.data.frame(matrix(NA,nrow=4,ncol=4))
+colnames(table1)<-c("","","In-Group Frame (t1)","Cross-Group Frame (t2)")
+table1[2,1]<-"Summary of Article"
+table1[3,1]<-"Summary of Article"
+table1[4,1]<-"Reaction to Article"
+table1[2,2]<-"Mentions racism against Asian Americans"
+table1[3,2]<-"Mentions racism against racial minorities"
+table1[4,2]<-"Expresses they are not surprised"
+
+table1[2,3]<-round(mean(datall$summ.aaracism[datall$treat==1],na.rm=TRUE),3)*100
+table1[2,4]<-round(mean(datall$summ.aaracism[datall$treat==2],na.rm=TRUE),3)*100
+
+table1[3,3]<-round(mean(datall$summ.poc[datall$treat==1],na.rm=TRUE),3)*100
+table1[3,4]<-round(mean(datall$summ.poc[datall$treat==2],na.rm=TRUE),3)*100
+
+table1[4,3]<-round(mean(datall$react.nsurprise[datall$treat==1],na.rm=TRUE),3)*100
+table1[4,4]<-round(mean(datall$react.nsurprise[datall$treat==2],na.rm=TRUE),3)*100
+
+```
+
+
+#table 2
+```{r}
+
+table2<-as.data.frame(matrix(NA,nrow=3,ncol=5))
+colnames(table2)<-c("","","Democrats","Republicans","1st generation")
+table2[2,1]<-"Summary of Article"
+table2[3,1]<-"Reaction to Article"
+table2[2,2]<-"Mentions racism against racial minorities (Cross-Group Frame only)"
+table2[3,2]<-"Expresses they are not surprised (In-Group Frame and Cross-Group Frame)"
+
+table2[2,3]<-round(mean(datall$summ.poc[datall$partisan<4 & datall$treat==2],na.rm = TRUE),3)*100 #democrat 0.4526749
+table2[2,4]<-round(mean(datall$summ.poc[datall$partisan>4 & datall$treat==2],na.rm = TRUE),3)*100 #republican 0.4144144
+table2[2,5]<-round(mean(datall$summ.poc[datall$immgen==1 & datall$treat==2],na.rm=TRUE),3)*100 #1st gen 0.3669065
+
+
+table2[3,3]<-round(mean(datall$react.nsurprise[datall$partisan<4],na.rm=TRUE),3)*100 #democrat 0.1825558
+table2[3,4]<-round(mean(datall$react.nsurprise[datall$partisan>4],na.rm=TRUE),3)*100 #republican 0.08370044
+table2[3,5]<-round(mean(datall$react.nsurprise[datall$immgen==1],na.rm=TRUE),3)*100 #1st gen 0.1153846
+
+
+```
+
+
+
+
+
+
+

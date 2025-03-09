@@ -1,0 +1,1285 @@
+---
+title: "strained solidarity experiment analyses"
+author: "Stephanie Chan"
+date: "2024-06-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+packages
+```{r}
+
+#install.packages("ggplot2")
+library(ggplot2)
+#install.packages("ggpubr")
+library(ggpubr)
+#install.packages("stringr")        
+library(stringr)  
+#install.packages("ltm")
+library(ltm)
+
+```
+
+reading in data 
+```{r}
+
+dat<-read.csv("aapi coalitions data recoded nov 3 2022.csv",stringsAsFactors = F)
+
+```
+
+origin subsets
+```{r}
+
+sort(table(dat$region1))
+
+china<-dat[dat$region1=="China" & !is.na(dat$region1),]
+philippines<-dat[dat$region1=="Philippines" & !is.na(dat$region1),]
+india<-dat[dat$region1=="India" & !is.na(dat$region1),]
+japan<-dat[dat$region1=="Japan" & !is.na(dat$region1),]
+
+table(china$close1,china$treat)
+table(china$close2)
+table(china$close3)
+table(china$close4)
+table(china$close1)
+
+```
+
+#figuring out scales
+```{r}
+
+cronbach.alpha(cbind(dat$close1,dat$close2,dat$close3,dat$close4),na.rm=TRUE) #0.66
+
+cronbach.alpha(cbind(dat$link1,dat$link2,dat$link3,dat$link4),na.rm=TRUE) #0.773
+
+cronbach.alpha(cbind(dat$linkdis1,dat$linkdis2,dat$linkdis3,dat$linkdis4,dat$linkdis5),na.rm=TRUE) #0.852 
+
+cronbach.alpha(cbind(dat$info1,dat$info2,dat$info3,dat$info4,dat$info5),na.rm=TRUE) #0.869
+
+cronbach.alpha(cbind(dat$pmove1,dat$pmove2,dat$pmove3,
+                     dat$pmove4,dat$pmove5,dat$pmove6,
+                     dat$pmove7,dat$pmove8,dat$pmove9),na.rm=TRUE) #0.637
+
+cronbach.alpha(cbind(dat$idmag1,dat$idmag2,dat$idmag3,dat$idmag4,dat$idmag5),na.rm=TRUE) #0.667
+
+cronbach.alpha(cbind(dat$dis1,dat$dis2,dat$dis3,
+                     dat$dis4,dat$dis5,dat$dis6,
+                     dat$dis7,dat$dis8),na.rm=TRUE) #0.881
+
+cronbach.alpha(cbind(dat$resent1,dat$resent2,dat$resent3,dat$resent4),na.rm=TRUE) #0.357
+
+```
+
+#figuring out poc scales
+linkdis
+dis
+```{r}
+
+cronbach.alpha(cbind(dat$close2,dat$close3,dat$close4),na.rm=TRUE) #0.696
+
+cronbach.alpha(cbind(dat$link2,dat$link3,dat$link4),na.rm=TRUE) #0.775
+
+cronbach.alpha(cbind(dat$linkdis2,dat$linkdis3,dat$linkdis4,dat$linkdis5),na.rm=TRUE) #0.887
+
+cronbach.alpha(cbind(dat$info1,dat$info2,dat$info3,dat$info4,dat$info5),na.rm=TRUE) #0.869
+
+cronbach.alpha(cbind(dat$pmove1,dat$pmove2,dat$pmove3,
+                     dat$pmove4,dat$pmove5,dat$pmove6,
+                     dat$pmove7,dat$pmove8,dat$pmove9),na.rm=TRUE) #0.637
+
+cronbach.alpha(cbind(dat$idmag1,dat$idmag2,dat$idmag3,dat$idmag4,dat$idmag5),na.rm=TRUE) #0.667
+
+cronbach.alpha(cbind(dat$dis2,dat$dis3,
+                     dat$dis5),na.rm=TRUE) #0.833
+
+cronbach.alpha(cbind(dat$resent1,dat$resent2,dat$resent3,dat$resent4),na.rm=TRUE) #0.357
+
+```
+
+#figuring out black/latinx scale
+closeness
+link
+policy
+information
+```{r}
+
+cronbach.alpha(cbind(dat$close2,dat$close4),na.rm=TRUE) #0.8
+
+cronbach.alpha(cbind(dat$link2,dat$link4),na.rm=TRUE) #0.857
+
+cronbach.alpha(cbind(dat$pmove1,dat$pmove2,
+                     dat$pmove5,dat$pmove6),na.rm=TRUE) #0.794
+
+
+```
+
+#creating scales
+I took any that were above 0.7
+```{r}
+
+#link 1-4
+dat$linkscale<-(dat$link1+dat$link2+dat$link3+dat$link4)/4
+
+#linkdis1-5
+dat$linkdisscale<-(dat$linkdis1+dat$linkdis2+
+                     dat$linkdis3+dat$linkdis4+dat$linkdis5)/5
+
+#info 1-5
+dat$infoscale<-(dat$info1+dat$info2+dat$info3+
+                  dat$info4+dat$info5)/5
+
+#dis 1-8
+dat$disscale<-(dat$dis1+dat$dis2+dat$dis3+
+                 dat$dis4+dat$dis5+dat$dis6+
+                 dat$dis7+dat$dis8)/8
+
+
+
+```
+
+#creating poc scales
+```{r}
+
+#linkdis2-5
+dat$linkdisscale2<-(dat$linkdis2+dat$linkdis3+dat$linkdis4+dat$linkdis5)/4
+
+#dis 2,3,5
+dat$disscale2<-(dat$dis2+dat$dis3+
+                 dat$dis5)/3
+
+```
+
+#creating black/latinx scale
+```{r}
+
+#close 2,4 (Blck people, Latinos)
+dat$closescale3<-(dat$close2+dat$close4)/2
+
+#link 2,4 (Black people, Latinos)
+dat$linkscale3<-(dat$link2+dat$link4)/2
+
+```
+
+
+#setting up subsets#
+```{r}
+#first gen
+dat5<-dat[dat$immgen==1,]
+dat5<-dat5[!is.na(dat5$immgen),]
+
+#second gen and higher 
+dat7<-dat[dat$immgen>1,]
+dat7<-dat7[!is.na(dat7$immgen),]
+
+#reps
+dat3<-dat[dat$partisan==5|
+          dat$partisan==6|
+          dat$partisan==7,]
+dat3<-dat3[!is.na(dat3$partisan),]
+
+#dems
+dat4<-dat[dat$partisan==1|
+          dat$partisan==2|
+          dat$partisan==3,]
+dat4<-dat4[!is.na(dat4$partisan),]
+
+#inds
+dat6<-dat[dat$partisan==4,]
+dat6<-dat6[!is.na(dat6$partisan),]
+
+```
+
+link scale
+```{r}
+
+###overall table###
+linkscale.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(linkscale.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+linkscale.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+linkscale.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$linkscale[dat$treat==1],dat$linkscale[dat$treat==0])
+linkscale.tab[1,1:2]<-temp$estimate
+linkscale.tab[1,4:5]<-temp$conf.int
+linkscale.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$linkscale[dat$treat==2],dat$linkscale[dat$treat==0])
+linkscale.tab[2,1:2]<-temp$estimate
+linkscale.tab[2,4:5]<-temp$conf.int
+linkscale.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$linkscale[dat$treat==2],dat$linkscale[dat$treat==1])
+linkscale.tab[3,1:2]<-temp$estimate
+linkscale.tab[3,4:5]<-temp$conf.int
+linkscale.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$linkscale[dat5$treat==1],dat5$linkscale[dat5$treat==0])
+linkscale.tab[4,1:2]<-temp$estimate
+linkscale.tab[4,4:5]<-temp$conf.int
+linkscale.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$linkscale[dat5$treat==2],dat5$linkscale[dat5$treat==0])
+linkscale.tab[5,1:2]<-temp$estimate
+linkscale.tab[5,4:5]<-temp$conf.int
+linkscale.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$linkscale[dat5$treat==2],dat5$linkscale[dat5$treat==1])
+linkscale.tab[6,1:2]<-temp$estimate
+linkscale.tab[6,4:5]<-temp$conf.int
+linkscale.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$linkscale[dat7$treat==1],dat7$linkscale[dat7$treat==0])
+linkscale.tab[7,1:2]<-temp$estimate
+linkscale.tab[7,4:5]<-temp$conf.int
+linkscale.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$linkscale[dat7$treat==2],dat7$linkscale[dat7$treat==0])
+linkscale.tab[8,1:2]<-temp$estimate
+linkscale.tab[8,4:5]<-temp$conf.int
+linkscale.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$linkscale[dat7$treat==2],dat7$linkscale[dat7$treat==1])
+linkscale.tab[9,1:2]<-temp$estimate
+linkscale.tab[9,4:5]<-temp$conf.int
+linkscale.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$linkscale[dat3$treat==1],dat3$linkscale[dat3$treat==0])
+linkscale.tab[10,1:2]<-temp$estimate
+linkscale.tab[10,4:5]<-temp$conf.int
+linkscale.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$linkscale[dat3$treat==2],dat3$linkscale[dat3$treat==0])
+linkscale.tab[11,1:2]<-temp$estimate
+linkscale.tab[11,4:5]<-temp$conf.int
+linkscale.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$linkscale[dat3$treat==2],dat3$linkscale[dat3$treat==1])
+linkscale.tab[12,1:2]<-temp$estimate
+linkscale.tab[12,4:5]<-temp$conf.int
+linkscale.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$linkscale[dat4$treat==1],dat4$linkscale[dat4$treat==0])
+linkscale.tab[13,1:2]<-temp$estimate
+linkscale.tab[13,4:5]<-temp$conf.int
+linkscale.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$linkscale[dat4$treat==2],dat4$linkscale[dat4$treat==0])
+linkscale.tab[14,1:2]<-temp$estimate
+linkscale.tab[14,4:5]<-temp$conf.int
+linkscale.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$linkscale[dat4$treat==2],dat4$linkscale[dat4$treat==1])
+linkscale.tab[15,1:2]<-temp$estimate
+linkscale.tab[15,4:5]<-temp$conf.int
+linkscale.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$linkscale[dat6$treat==1],dat6$linkscale[dat6$treat==0])
+linkscale.tab[16,1:2]<-temp$estimate
+linkscale.tab[16,4:5]<-temp$conf.int
+linkscale.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$linkscale[dat6$treat==2],dat6$linkscale[dat6$treat==0])
+linkscale.tab[17,1:2]<-temp$estimate
+linkscale.tab[17,4:5]<-temp$conf.int
+linkscale.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$linkscale[dat6$treat==2],dat6$linkscale[dat6$treat==1])
+linkscale.tab[18,1:2]<-temp$estimate
+linkscale.tab[18,4:5]<-temp$conf.int
+linkscale.tab[18,6]<-temp$p.value
+
+###differences###
+linkscale.tab$diff<-linkscale.tab$x-linkscale.tab$y
+
+###table for appendix###
+linkscale.tab2<-linkscale.tab
+
+#taking out t2-t1
+linkscale.tab2<-linkscale.tab2[linkscale.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+linkscale.tab2$x<-round(linkscale.tab2$x,3)
+linkscale.tab2$y<-round(linkscale.tab2$y,3)
+linkscale.tab2$diff<-round(linkscale.tab2$diff,3)
+linkscale.tab2$lower<-round(linkscale.tab2$lower,3)
+linkscale.tab2$upper<-round(linkscale.tab2$upper,3)
+linkscale.tab2$p<-round(linkscale.tab2$p,3)
+
+colnames(linkscale.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+#write.csv(linkscale.tab2,"linkscale appendix table.csv")
+
+```
+
+
+linkdis scale
+```{r}
+
+###overall table###
+linkdisscale.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(linkdisscale.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+linkdisscale.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+linkdisscale.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$linkdisscale[dat$treat==1],dat$linkdisscale[dat$treat==0])
+linkdisscale.tab[1,1:2]<-temp$estimate
+linkdisscale.tab[1,4:5]<-temp$conf.int
+linkdisscale.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$linkdisscale[dat$treat==2],dat$linkdisscale[dat$treat==0])
+linkdisscale.tab[2,1:2]<-temp$estimate
+linkdisscale.tab[2,4:5]<-temp$conf.int
+linkdisscale.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$linkdisscale[dat$treat==2],dat$linkdisscale[dat$treat==1])
+linkdisscale.tab[3,1:2]<-temp$estimate
+linkdisscale.tab[3,4:5]<-temp$conf.int
+linkdisscale.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$linkdisscale[dat5$treat==1],dat5$linkdisscale[dat5$treat==0])
+linkdisscale.tab[4,1:2]<-temp$estimate
+linkdisscale.tab[4,4:5]<-temp$conf.int
+linkdisscale.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$linkdisscale[dat5$treat==2],dat5$linkdisscale[dat5$treat==0])
+linkdisscale.tab[5,1:2]<-temp$estimate
+linkdisscale.tab[5,4:5]<-temp$conf.int
+linkdisscale.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$linkdisscale[dat5$treat==2],dat5$linkdisscale[dat5$treat==1])
+linkdisscale.tab[6,1:2]<-temp$estimate
+linkdisscale.tab[6,4:5]<-temp$conf.int
+linkdisscale.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$linkdisscale[dat7$treat==1],dat7$linkdisscale[dat7$treat==0])
+linkdisscale.tab[7,1:2]<-temp$estimate
+linkdisscale.tab[7,4:5]<-temp$conf.int
+linkdisscale.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$linkdisscale[dat7$treat==2],dat7$linkdisscale[dat7$treat==0])
+linkdisscale.tab[8,1:2]<-temp$estimate
+linkdisscale.tab[8,4:5]<-temp$conf.int
+linkdisscale.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$linkdisscale[dat7$treat==2],dat7$linkdisscale[dat7$treat==1])
+linkdisscale.tab[9,1:2]<-temp$estimate
+linkdisscale.tab[9,4:5]<-temp$conf.int
+linkdisscale.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$linkdisscale[dat3$treat==1],dat3$linkdisscale[dat3$treat==0])
+linkdisscale.tab[10,1:2]<-temp$estimate
+linkdisscale.tab[10,4:5]<-temp$conf.int
+linkdisscale.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$linkdisscale[dat3$treat==2],dat3$linkdisscale[dat3$treat==0])
+linkdisscale.tab[11,1:2]<-temp$estimate
+linkdisscale.tab[11,4:5]<-temp$conf.int
+linkdisscale.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$linkdisscale[dat3$treat==2],dat3$linkdisscale[dat3$treat==1])
+linkdisscale.tab[12,1:2]<-temp$estimate
+linkdisscale.tab[12,4:5]<-temp$conf.int
+linkdisscale.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$linkdisscale[dat4$treat==1],dat4$linkdisscale[dat4$treat==0])
+linkdisscale.tab[13,1:2]<-temp$estimate
+linkdisscale.tab[13,4:5]<-temp$conf.int
+linkdisscale.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$linkdisscale[dat4$treat==2],dat4$linkdisscale[dat4$treat==0])
+linkdisscale.tab[14,1:2]<-temp$estimate
+linkdisscale.tab[14,4:5]<-temp$conf.int
+linkdisscale.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$linkdisscale[dat4$treat==2],dat4$linkdisscale[dat4$treat==1])
+linkdisscale.tab[15,1:2]<-temp$estimate
+linkdisscale.tab[15,4:5]<-temp$conf.int
+linkdisscale.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$linkdisscale[dat6$treat==1],dat6$linkdisscale[dat6$treat==0])
+linkdisscale.tab[16,1:2]<-temp$estimate
+linkdisscale.tab[16,4:5]<-temp$conf.int
+linkdisscale.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$linkdisscale[dat6$treat==2],dat6$linkdisscale[dat6$treat==0])
+linkdisscale.tab[17,1:2]<-temp$estimate
+linkdisscale.tab[17,4:5]<-temp$conf.int
+linkdisscale.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$linkdisscale[dat6$treat==2],dat6$linkdisscale[dat6$treat==1])
+linkdisscale.tab[18,1:2]<-temp$estimate
+linkdisscale.tab[18,4:5]<-temp$conf.int
+linkdisscale.tab[18,6]<-temp$p.value
+
+###differences###
+linkdisscale.tab$diff<-linkdisscale.tab$x-linkdisscale.tab$y
+
+###table for appendix###
+linkdisscale.tab2<-linkdisscale.tab
+
+#taking out t2-t1
+linkdisscale.tab2<-linkdisscale.tab2[linkdisscale.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+linkdisscale.tab2$x<-round(linkdisscale.tab2$x,3)
+linkdisscale.tab2$y<-round(linkdisscale.tab2$y,3)
+linkdisscale.tab2$diff<-round(linkdisscale.tab2$diff,3)
+linkdisscale.tab2$lower<-round(linkdisscale.tab2$lower,3)
+linkdisscale.tab2$upper<-round(linkdisscale.tab2$upper,3)
+linkdisscale.tab2$p<-round(linkdisscale.tab2$p,3)
+
+colnames(linkdisscale.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+#write.csv(linkdisscale.tab2,"linkdisscale appendix table.csv")
+
+```
+
+linkdisscale2
+```{r}
+
+###overall table###
+linkdisscale2.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(linkdisscale2.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+linkdisscale2.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+linkdisscale2.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$linkdisscale2[dat$treat==1],dat$linkdisscale2[dat$treat==0])
+linkdisscale2.tab[1,1:2]<-temp$estimate
+linkdisscale2.tab[1,4:5]<-temp$conf.int
+linkdisscale2.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$linkdisscale2[dat$treat==2],dat$linkdisscale2[dat$treat==0])
+linkdisscale2.tab[2,1:2]<-temp$estimate
+linkdisscale2.tab[2,4:5]<-temp$conf.int
+linkdisscale2.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$linkdisscale2[dat$treat==2],dat$linkdisscale2[dat$treat==1])
+linkdisscale2.tab[3,1:2]<-temp$estimate
+linkdisscale2.tab[3,4:5]<-temp$conf.int
+linkdisscale2.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$linkdisscale2[dat5$treat==1],dat5$linkdisscale2[dat5$treat==0])
+linkdisscale2.tab[4,1:2]<-temp$estimate
+linkdisscale2.tab[4,4:5]<-temp$conf.int
+linkdisscale2.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$linkdisscale2[dat5$treat==2],dat5$linkdisscale2[dat5$treat==0])
+linkdisscale2.tab[5,1:2]<-temp$estimate
+linkdisscale2.tab[5,4:5]<-temp$conf.int
+linkdisscale2.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$linkdisscale2[dat5$treat==2],dat5$linkdisscale2[dat5$treat==1])
+linkdisscale2.tab[6,1:2]<-temp$estimate
+linkdisscale2.tab[6,4:5]<-temp$conf.int
+linkdisscale2.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$linkdisscale2[dat7$treat==1],dat7$linkdisscale2[dat7$treat==0])
+linkdisscale2.tab[7,1:2]<-temp$estimate
+linkdisscale2.tab[7,4:5]<-temp$conf.int
+linkdisscale2.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$linkdisscale2[dat7$treat==2],dat7$linkdisscale2[dat7$treat==0])
+linkdisscale2.tab[8,1:2]<-temp$estimate
+linkdisscale2.tab[8,4:5]<-temp$conf.int
+linkdisscale2.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$linkdisscale2[dat7$treat==2],dat7$linkdisscale2[dat7$treat==1])
+linkdisscale2.tab[9,1:2]<-temp$estimate
+linkdisscale2.tab[9,4:5]<-temp$conf.int
+linkdisscale2.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$linkdisscale2[dat3$treat==1],dat3$linkdisscale2[dat3$treat==0])
+linkdisscale2.tab[10,1:2]<-temp$estimate
+linkdisscale2.tab[10,4:5]<-temp$conf.int
+linkdisscale2.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$linkdisscale2[dat3$treat==2],dat3$linkdisscale2[dat3$treat==0])
+linkdisscale2.tab[11,1:2]<-temp$estimate
+linkdisscale2.tab[11,4:5]<-temp$conf.int
+linkdisscale2.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$linkdisscale2[dat3$treat==2],dat3$linkdisscale2[dat3$treat==1])
+linkdisscale2.tab[12,1:2]<-temp$estimate
+linkdisscale2.tab[12,4:5]<-temp$conf.int
+linkdisscale2.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$linkdisscale2[dat4$treat==1],dat4$linkdisscale2[dat4$treat==0])
+linkdisscale2.tab[13,1:2]<-temp$estimate
+linkdisscale2.tab[13,4:5]<-temp$conf.int
+linkdisscale2.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$linkdisscale2[dat4$treat==2],dat4$linkdisscale2[dat4$treat==0])
+linkdisscale2.tab[14,1:2]<-temp$estimate
+linkdisscale2.tab[14,4:5]<-temp$conf.int
+linkdisscale2.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$linkdisscale2[dat4$treat==2],dat4$linkdisscale2[dat4$treat==1])
+linkdisscale2.tab[15,1:2]<-temp$estimate
+linkdisscale2.tab[15,4:5]<-temp$conf.int
+linkdisscale2.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$linkdisscale2[dat6$treat==1],dat6$linkdisscale2[dat6$treat==0])
+linkdisscale2.tab[16,1:2]<-temp$estimate
+linkdisscale2.tab[16,4:5]<-temp$conf.int
+linkdisscale2.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$linkdisscale2[dat6$treat==2],dat6$linkdisscale2[dat6$treat==0])
+linkdisscale2.tab[17,1:2]<-temp$estimate
+linkdisscale2.tab[17,4:5]<-temp$conf.int
+linkdisscale2.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$linkdisscale2[dat6$treat==2],dat6$linkdisscale2[dat6$treat==1])
+linkdisscale2.tab[18,1:2]<-temp$estimate
+linkdisscale2.tab[18,4:5]<-temp$conf.int
+linkdisscale2.tab[18,6]<-temp$p.value
+
+###differences###
+linkdisscale2.tab$diff<-linkdisscale2.tab$x-linkdisscale2.tab$y
+
+###table for appendix###
+linkdisscale2.tab2<-linkdisscale2.tab
+
+#taking out t2-t1
+linkdisscale2.tab2<-linkdisscale2.tab2[linkdisscale2.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+linkdisscale2.tab2$x<-round(linkdisscale2.tab2$x,3)
+linkdisscale2.tab2$y<-round(linkdisscale2.tab2$y,3)
+linkdisscale2.tab2$diff<-round(linkdisscale2.tab2$diff,3)
+linkdisscale2.tab2$lower<-round(linkdisscale2.tab2$lower,3)
+linkdisscale2.tab2$upper<-round(linkdisscale2.tab2$upper,3)
+linkdisscale2.tab2$p<-round(linkdisscale2.tab2$p,3)
+
+colnames(linkdisscale2.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+#write.csv(linkdisscale2.tab2,"linkdisscale2 appendix table.csv")
+```
+
+
+info scale
+```{r}
+
+###overall table###
+infoscale.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(infoscale.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+infoscale.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+infoscale.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$infoscale[dat$treat==1],dat$infoscale[dat$treat==0])
+infoscale.tab[1,1:2]<-temp$estimate
+infoscale.tab[1,4:5]<-temp$conf.int
+infoscale.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$infoscale[dat$treat==2],dat$infoscale[dat$treat==0])
+infoscale.tab[2,1:2]<-temp$estimate
+infoscale.tab[2,4:5]<-temp$conf.int
+infoscale.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$infoscale[dat$treat==2],dat$infoscale[dat$treat==1])
+infoscale.tab[3,1:2]<-temp$estimate
+infoscale.tab[3,4:5]<-temp$conf.int
+infoscale.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$infoscale[dat5$treat==1],dat5$infoscale[dat5$treat==0])
+infoscale.tab[4,1:2]<-temp$estimate
+infoscale.tab[4,4:5]<-temp$conf.int
+infoscale.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$infoscale[dat5$treat==2],dat5$infoscale[dat5$treat==0])
+infoscale.tab[5,1:2]<-temp$estimate
+infoscale.tab[5,4:5]<-temp$conf.int
+infoscale.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$infoscale[dat5$treat==2],dat5$infoscale[dat5$treat==1])
+infoscale.tab[6,1:2]<-temp$estimate
+infoscale.tab[6,4:5]<-temp$conf.int
+infoscale.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$infoscale[dat7$treat==1],dat7$infoscale[dat7$treat==0])
+infoscale.tab[7,1:2]<-temp$estimate
+infoscale.tab[7,4:5]<-temp$conf.int
+infoscale.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$infoscale[dat7$treat==2],dat7$infoscale[dat7$treat==0])
+infoscale.tab[8,1:2]<-temp$estimate
+infoscale.tab[8,4:5]<-temp$conf.int
+infoscale.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$infoscale[dat7$treat==2],dat7$infoscale[dat7$treat==1])
+infoscale.tab[9,1:2]<-temp$estimate
+infoscale.tab[9,4:5]<-temp$conf.int
+infoscale.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$infoscale[dat3$treat==1],dat3$infoscale[dat3$treat==0])
+infoscale.tab[10,1:2]<-temp$estimate
+infoscale.tab[10,4:5]<-temp$conf.int
+infoscale.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$infoscale[dat3$treat==2],dat3$infoscale[dat3$treat==0])
+infoscale.tab[11,1:2]<-temp$estimate
+infoscale.tab[11,4:5]<-temp$conf.int
+infoscale.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$infoscale[dat3$treat==2],dat3$infoscale[dat3$treat==1])
+infoscale.tab[12,1:2]<-temp$estimate
+infoscale.tab[12,4:5]<-temp$conf.int
+infoscale.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$infoscale[dat4$treat==1],dat4$infoscale[dat4$treat==0])
+infoscale.tab[13,1:2]<-temp$estimate
+infoscale.tab[13,4:5]<-temp$conf.int
+infoscale.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$infoscale[dat4$treat==2],dat4$infoscale[dat4$treat==0])
+infoscale.tab[14,1:2]<-temp$estimate
+infoscale.tab[14,4:5]<-temp$conf.int
+infoscale.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$infoscale[dat4$treat==2],dat4$infoscale[dat4$treat==1])
+infoscale.tab[15,1:2]<-temp$estimate
+infoscale.tab[15,4:5]<-temp$conf.int
+infoscale.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$infoscale[dat6$treat==1],dat6$infoscale[dat6$treat==0])
+infoscale.tab[16,1:2]<-temp$estimate
+infoscale.tab[16,4:5]<-temp$conf.int
+infoscale.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$infoscale[dat6$treat==2],dat6$infoscale[dat6$treat==0])
+infoscale.tab[17,1:2]<-temp$estimate
+infoscale.tab[17,4:5]<-temp$conf.int
+infoscale.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$infoscale[dat6$treat==2],dat6$infoscale[dat6$treat==1])
+infoscale.tab[18,1:2]<-temp$estimate
+infoscale.tab[18,4:5]<-temp$conf.int
+infoscale.tab[18,6]<-temp$p.value
+
+###differences###
+infoscale.tab$diff<-infoscale.tab$x-infoscale.tab$y
+
+###table for appendix###
+infoscale.tab2<-infoscale.tab
+
+#taking out t2-t1
+infoscale.tab2<-infoscale.tab2[infoscale.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+infoscale.tab2$x<-round(infoscale.tab2$x,3)
+infoscale.tab2$y<-round(infoscale.tab2$y,3)
+infoscale.tab2$diff<-round(infoscale.tab2$diff,3)
+infoscale.tab2$lower<-round(infoscale.tab2$lower,3)
+infoscale.tab2$upper<-round(infoscale.tab2$upper,3)
+infoscale.tab2$p<-round(infoscale.tab2$p,3)
+
+colnames(infoscale.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+#write.csv(infoscale.tab2,"infoscale appendix table.csv")
+
+```
+
+dis scale
+```{r}
+
+###overall table###
+disscale.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(disscale.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+disscale.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+disscale.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$disscale[dat$treat==1],dat$disscale[dat$treat==0])
+disscale.tab[1,1:2]<-temp$estimate
+disscale.tab[1,4:5]<-temp$conf.int
+disscale.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$disscale[dat$treat==2],dat$disscale[dat$treat==0])
+disscale.tab[2,1:2]<-temp$estimate
+disscale.tab[2,4:5]<-temp$conf.int
+disscale.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$disscale[dat$treat==2],dat$disscale[dat$treat==1])
+disscale.tab[3,1:2]<-temp$estimate
+disscale.tab[3,4:5]<-temp$conf.int
+disscale.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$disscale[dat5$treat==1],dat5$disscale[dat5$treat==0])
+disscale.tab[4,1:2]<-temp$estimate
+disscale.tab[4,4:5]<-temp$conf.int
+disscale.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$disscale[dat5$treat==2],dat5$disscale[dat5$treat==0])
+disscale.tab[5,1:2]<-temp$estimate
+disscale.tab[5,4:5]<-temp$conf.int
+disscale.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$disscale[dat5$treat==2],dat5$disscale[dat5$treat==1])
+disscale.tab[6,1:2]<-temp$estimate
+disscale.tab[6,4:5]<-temp$conf.int
+disscale.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$disscale[dat7$treat==1],dat7$disscale[dat7$treat==0])
+disscale.tab[7,1:2]<-temp$estimate
+disscale.tab[7,4:5]<-temp$conf.int
+disscale.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$disscale[dat7$treat==2],dat7$disscale[dat7$treat==0])
+disscale.tab[8,1:2]<-temp$estimate
+disscale.tab[8,4:5]<-temp$conf.int
+disscale.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$disscale[dat7$treat==2],dat7$disscale[dat7$treat==1])
+disscale.tab[9,1:2]<-temp$estimate
+disscale.tab[9,4:5]<-temp$conf.int
+disscale.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$disscale[dat3$treat==1],dat3$disscale[dat3$treat==0])
+disscale.tab[10,1:2]<-temp$estimate
+disscale.tab[10,4:5]<-temp$conf.int
+disscale.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$disscale[dat3$treat==2],dat3$disscale[dat3$treat==0])
+disscale.tab[11,1:2]<-temp$estimate
+disscale.tab[11,4:5]<-temp$conf.int
+disscale.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$disscale[dat3$treat==2],dat3$disscale[dat3$treat==1])
+disscale.tab[12,1:2]<-temp$estimate
+disscale.tab[12,4:5]<-temp$conf.int
+disscale.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$disscale[dat4$treat==1],dat4$disscale[dat4$treat==0])
+disscale.tab[13,1:2]<-temp$estimate
+disscale.tab[13,4:5]<-temp$conf.int
+disscale.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$disscale[dat4$treat==2],dat4$disscale[dat4$treat==0])
+disscale.tab[14,1:2]<-temp$estimate
+disscale.tab[14,4:5]<-temp$conf.int
+disscale.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$disscale[dat4$treat==2],dat4$disscale[dat4$treat==1])
+disscale.tab[15,1:2]<-temp$estimate
+disscale.tab[15,4:5]<-temp$conf.int
+disscale.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$disscale[dat6$treat==1],dat6$disscale[dat6$treat==0])
+disscale.tab[16,1:2]<-temp$estimate
+disscale.tab[16,4:5]<-temp$conf.int
+disscale.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$disscale[dat6$treat==2],dat6$disscale[dat6$treat==0])
+disscale.tab[17,1:2]<-temp$estimate
+disscale.tab[17,4:5]<-temp$conf.int
+disscale.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$disscale[dat6$treat==2],dat6$disscale[dat6$treat==1])
+disscale.tab[18,1:2]<-temp$estimate
+disscale.tab[18,4:5]<-temp$conf.int
+disscale.tab[18,6]<-temp$p.value
+
+###differences###
+disscale.tab$diff<-disscale.tab$x-disscale.tab$y
+
+###table for appendix###
+disscale.tab2<-disscale.tab
+
+#taking out t2-t1
+disscale.tab2<-disscale.tab2[disscale.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+disscale.tab2$x<-round(disscale.tab2$x,3)
+disscale.tab2$y<-round(disscale.tab2$y,3)
+disscale.tab2$diff<-round(disscale.tab2$diff,3)
+disscale.tab2$lower<-round(disscale.tab2$lower,3)
+disscale.tab2$upper<-round(disscale.tab2$upper,3)
+disscale.tab2$p<-round(disscale.tab2$p,3)
+
+colnames(disscale.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+#write.csv(disscale.tab2,"disscale appendix table.csv")
+
+```
+
+dis scale 2-just poc
+```{r}
+
+###overall table###
+disscale2.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(disscale2.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+disscale2.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+disscale2.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$disscale2[dat$treat==1],dat$disscale2[dat$treat==0])
+disscale2.tab[1,1:2]<-temp$estimate
+disscale2.tab[1,4:5]<-temp$conf.int
+disscale2.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$disscale2[dat$treat==2],dat$disscale2[dat$treat==0])
+disscale2.tab[2,1:2]<-temp$estimate
+disscale2.tab[2,4:5]<-temp$conf.int
+disscale2.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$disscale2[dat$treat==2],dat$disscale2[dat$treat==1])
+disscale2.tab[3,1:2]<-temp$estimate
+disscale2.tab[3,4:5]<-temp$conf.int
+disscale2.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$disscale2[dat5$treat==1],dat5$disscale2[dat5$treat==0])
+disscale2.tab[4,1:2]<-temp$estimate
+disscale2.tab[4,4:5]<-temp$conf.int
+disscale2.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$disscale2[dat5$treat==2],dat5$disscale2[dat5$treat==0])
+disscale2.tab[5,1:2]<-temp$estimate
+disscale2.tab[5,4:5]<-temp$conf.int
+disscale2.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$disscale2[dat5$treat==2],dat5$disscale2[dat5$treat==1])
+disscale2.tab[6,1:2]<-temp$estimate
+disscale2.tab[6,4:5]<-temp$conf.int
+disscale2.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$disscale2[dat7$treat==1],dat7$disscale2[dat7$treat==0])
+disscale2.tab[7,1:2]<-temp$estimate
+disscale2.tab[7,4:5]<-temp$conf.int
+disscale2.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$disscale2[dat7$treat==2],dat7$disscale2[dat7$treat==0])
+disscale2.tab[8,1:2]<-temp$estimate
+disscale2.tab[8,4:5]<-temp$conf.int
+disscale2.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$disscale2[dat7$treat==2],dat7$disscale2[dat7$treat==1])
+disscale2.tab[9,1:2]<-temp$estimate
+disscale2.tab[9,4:5]<-temp$conf.int
+disscale2.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$disscale2[dat3$treat==1],dat3$disscale2[dat3$treat==0])
+disscale2.tab[10,1:2]<-temp$estimate
+disscale2.tab[10,4:5]<-temp$conf.int
+disscale2.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$disscale2[dat3$treat==2],dat3$disscale2[dat3$treat==0])
+disscale2.tab[11,1:2]<-temp$estimate
+disscale2.tab[11,4:5]<-temp$conf.int
+disscale2.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$disscale2[dat3$treat==2],dat3$disscale2[dat3$treat==1])
+disscale2.tab[12,1:2]<-temp$estimate
+disscale2.tab[12,4:5]<-temp$conf.int
+disscale2.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$disscale2[dat4$treat==1],dat4$disscale2[dat4$treat==0])
+disscale2.tab[13,1:2]<-temp$estimate
+disscale2.tab[13,4:5]<-temp$conf.int
+disscale2.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$disscale2[dat4$treat==2],dat4$disscale2[dat4$treat==0])
+disscale2.tab[14,1:2]<-temp$estimate
+disscale2.tab[14,4:5]<-temp$conf.int
+disscale2.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$disscale2[dat4$treat==2],dat4$disscale2[dat4$treat==1])
+disscale2.tab[15,1:2]<-temp$estimate
+disscale2.tab[15,4:5]<-temp$conf.int
+disscale2.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$disscale2[dat6$treat==1],dat6$disscale2[dat6$treat==0])
+disscale2.tab[16,1:2]<-temp$estimate
+disscale2.tab[16,4:5]<-temp$conf.int
+disscale2.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$disscale2[dat6$treat==2],dat6$disscale2[dat6$treat==0])
+disscale2.tab[17,1:2]<-temp$estimate
+disscale2.tab[17,4:5]<-temp$conf.int
+disscale2.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$disscale2[dat6$treat==2],dat6$disscale2[dat6$treat==1])
+disscale2.tab[18,1:2]<-temp$estimate
+disscale2.tab[18,4:5]<-temp$conf.int
+disscale2.tab[18,6]<-temp$p.value
+
+###differences###
+disscale2.tab$diff<-disscale2.tab$x-disscale2.tab$y
+
+###table for appendix###
+disscale2.tab2<-disscale2.tab
+
+#taking out t2-t1
+disscale2.tab2<-disscale2.tab2[disscale2.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+disscale2.tab2$x<-round(disscale2.tab2$x,3)
+disscale2.tab2$y<-round(disscale2.tab2$y,3)
+disscale2.tab2$diff<-round(disscale2.tab2$diff,3)
+disscale2.tab2$lower<-round(disscale2.tab2$lower,3)
+disscale2.tab2$upper<-round(disscale2.tab2$upper,3)
+disscale2.tab2$p<-round(disscale2.tab2$p,3)
+
+colnames(disscale2.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+#write.csv(disscale2.tab2,"disscale2 appendix table.csv")
+
+```
+
+closescale3-just black and latinx
+```{r}
+
+###overall table###
+closescale3.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(closescale3.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+closescale3.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+closescale3.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$closescale3[dat$treat==1],dat$closescale3[dat$treat==0])
+closescale3.tab[1,1:2]<-temp$estimate
+closescale3.tab[1,4:5]<-temp$conf.int
+closescale3.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$closescale3[dat$treat==2],dat$closescale3[dat$treat==0])
+closescale3.tab[2,1:2]<-temp$estimate
+closescale3.tab[2,4:5]<-temp$conf.int
+closescale3.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$closescale3[dat$treat==2],dat$closescale3[dat$treat==1])
+closescale3.tab[3,1:2]<-temp$estimate
+closescale3.tab[3,4:5]<-temp$conf.int
+closescale3.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$closescale3[dat5$treat==1],dat5$closescale3[dat5$treat==0])
+closescale3.tab[4,1:2]<-temp$estimate
+closescale3.tab[4,4:5]<-temp$conf.int
+closescale3.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$closescale3[dat5$treat==2],dat5$closescale3[dat5$treat==0])
+closescale3.tab[5,1:2]<-temp$estimate
+closescale3.tab[5,4:5]<-temp$conf.int
+closescale3.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$closescale3[dat5$treat==2],dat5$closescale3[dat5$treat==1])
+closescale3.tab[6,1:2]<-temp$estimate
+closescale3.tab[6,4:5]<-temp$conf.int
+closescale3.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$closescale3[dat7$treat==1],dat7$closescale3[dat7$treat==0])
+closescale3.tab[7,1:2]<-temp$estimate
+closescale3.tab[7,4:5]<-temp$conf.int
+closescale3.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$closescale3[dat7$treat==2],dat7$closescale3[dat7$treat==0])
+closescale3.tab[8,1:2]<-temp$estimate
+closescale3.tab[8,4:5]<-temp$conf.int
+closescale3.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$closescale3[dat7$treat==2],dat7$closescale3[dat7$treat==1])
+closescale3.tab[9,1:2]<-temp$estimate
+closescale3.tab[9,4:5]<-temp$conf.int
+closescale3.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$closescale3[dat3$treat==1],dat3$closescale3[dat3$treat==0])
+closescale3.tab[10,1:2]<-temp$estimate
+closescale3.tab[10,4:5]<-temp$conf.int
+closescale3.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$closescale3[dat3$treat==2],dat3$closescale3[dat3$treat==0])
+closescale3.tab[11,1:2]<-temp$estimate
+closescale3.tab[11,4:5]<-temp$conf.int
+closescale3.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$closescale3[dat3$treat==2],dat3$closescale3[dat3$treat==1])
+closescale3.tab[12,1:2]<-temp$estimate
+closescale3.tab[12,4:5]<-temp$conf.int
+closescale3.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$closescale3[dat4$treat==1],dat4$closescale3[dat4$treat==0])
+closescale3.tab[13,1:2]<-temp$estimate
+closescale3.tab[13,4:5]<-temp$conf.int
+closescale3.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$closescale3[dat4$treat==2],dat4$closescale3[dat4$treat==0])
+closescale3.tab[14,1:2]<-temp$estimate
+closescale3.tab[14,4:5]<-temp$conf.int
+closescale3.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$closescale3[dat4$treat==2],dat4$closescale3[dat4$treat==1])
+closescale3.tab[15,1:2]<-temp$estimate
+closescale3.tab[15,4:5]<-temp$conf.int
+closescale3.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$closescale3[dat6$treat==1],dat6$closescale3[dat6$treat==0])
+closescale3.tab[16,1:2]<-temp$estimate
+closescale3.tab[16,4:5]<-temp$conf.int
+closescale3.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$closescale3[dat6$treat==2],dat6$closescale3[dat6$treat==0])
+closescale3.tab[17,1:2]<-temp$estimate
+closescale3.tab[17,4:5]<-temp$conf.int
+closescale3.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$closescale3[dat6$treat==2],dat6$closescale3[dat6$treat==1])
+closescale3.tab[18,1:2]<-temp$estimate
+closescale3.tab[18,4:5]<-temp$conf.int
+closescale3.tab[18,6]<-temp$p.value
+
+###differences###
+closescale3.tab$diff<-closescale3.tab$x-closescale3.tab$y
+
+###table for appendix###
+closescale3.tab2<-closescale3.tab
+
+#taking out t2-t1
+closescale3.tab2<-closescale3.tab2[closescale3.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+closescale3.tab2$x<-round(closescale3.tab2$x,3)
+closescale3.tab2$y<-round(closescale3.tab2$y,3)
+closescale3.tab2$diff<-round(closescale3.tab2$diff,3)
+closescale3.tab2$lower<-round(closescale3.tab2$lower,3)
+closescale3.tab2$upper<-round(closescale3.tab2$upper,3)
+closescale3.tab2$p<-round(closescale3.tab2$p,3)
+
+colnames(closescale3.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+write.csv(closescale3.tab2,"closescale3 appendix table.csv")
+
+```
+
+linkscale3-just black and latinx
+```{r}
+
+###overall table###
+linkscale3.tab<-as.data.frame(matrix(NA,nrow=18,ncol=8))
+colnames(linkscale3.tab)<-c("x","y","diff","lower","upper","p","treats","group")
+linkscale3.tab$treats<-rep(c("t1-t0","t2-t0","t2-t1"),times=6)
+linkscale3.tab$group<-c("Full","Full","Full",
+                       "First","First","First",
+                       "Second plus","Second plus","Second plus",
+                       "Republican","Republican","Republican",
+                       "Democrat","Democrat","Democrat",
+                       "Independent","Independent","Independent")
+
+###full###
+temp<-t.test(dat$linkscale3[dat$treat==1],dat$linkscale3[dat$treat==0])
+linkscale3.tab[1,1:2]<-temp$estimate
+linkscale3.tab[1,4:5]<-temp$conf.int
+linkscale3.tab[1,6]<-temp$p.value
+
+temp<-t.test(dat$linkscale3[dat$treat==2],dat$linkscale3[dat$treat==0])
+linkscale3.tab[2,1:2]<-temp$estimate
+linkscale3.tab[2,4:5]<-temp$conf.int
+linkscale3.tab[2,6]<-temp$p.value
+
+temp<-t.test(dat$linkscale3[dat$treat==2],dat$linkscale3[dat$treat==1])
+linkscale3.tab[3,1:2]<-temp$estimate
+linkscale3.tab[3,4:5]<-temp$conf.int
+linkscale3.tab[3,6]<-temp$p.value
+
+###generation subsets###
+#first
+temp<-t.test(dat5$linkscale3[dat5$treat==1],dat5$linkscale3[dat5$treat==0])
+linkscale3.tab[4,1:2]<-temp$estimate
+linkscale3.tab[4,4:5]<-temp$conf.int
+linkscale3.tab[4,6]<-temp$p.value
+
+temp<-t.test(dat5$linkscale3[dat5$treat==2],dat5$linkscale3[dat5$treat==0])
+linkscale3.tab[5,1:2]<-temp$estimate
+linkscale3.tab[5,4:5]<-temp$conf.int
+linkscale3.tab[5,6]<-temp$p.value
+
+temp<-t.test(dat5$linkscale3[dat5$treat==2],dat5$linkscale3[dat5$treat==1])
+linkscale3.tab[6,1:2]<-temp$estimate
+linkscale3.tab[6,4:5]<-temp$conf.int
+linkscale3.tab[6,6]<-temp$p.value
+
+#second plus
+temp<-t.test(dat7$linkscale3[dat7$treat==1],dat7$linkscale3[dat7$treat==0])
+linkscale3.tab[7,1:2]<-temp$estimate
+linkscale3.tab[7,4:5]<-temp$conf.int
+linkscale3.tab[7,6]<-temp$p.value
+
+temp<-t.test(dat7$linkscale3[dat7$treat==2],dat7$linkscale3[dat7$treat==0])
+linkscale3.tab[8,1:2]<-temp$estimate
+linkscale3.tab[8,4:5]<-temp$conf.int
+linkscale3.tab[8,6]<-temp$p.value
+
+temp<-t.test(dat7$linkscale3[dat7$treat==2],dat7$linkscale3[dat7$treat==1])
+linkscale3.tab[9,1:2]<-temp$estimate
+linkscale3.tab[9,4:5]<-temp$conf.int
+linkscale3.tab[9,6]<-temp$p.value
+
+###partisanship subsets###
+#rep
+temp<-t.test(dat3$linkscale3[dat3$treat==1],dat3$linkscale3[dat3$treat==0])
+linkscale3.tab[10,1:2]<-temp$estimate
+linkscale3.tab[10,4:5]<-temp$conf.int
+linkscale3.tab[10,6]<-temp$p.value
+
+temp<-t.test(dat3$linkscale3[dat3$treat==2],dat3$linkscale3[dat3$treat==0])
+linkscale3.tab[11,1:2]<-temp$estimate
+linkscale3.tab[11,4:5]<-temp$conf.int
+linkscale3.tab[11,6]<-temp$p.value
+
+temp<-t.test(dat3$linkscale3[dat3$treat==2],dat3$linkscale3[dat3$treat==1])
+linkscale3.tab[12,1:2]<-temp$estimate
+linkscale3.tab[12,4:5]<-temp$conf.int
+linkscale3.tab[12,6]<-temp$p.value
+
+#dem
+temp<-t.test(dat4$linkscale3[dat4$treat==1],dat4$linkscale3[dat4$treat==0])
+linkscale3.tab[13,1:2]<-temp$estimate
+linkscale3.tab[13,4:5]<-temp$conf.int
+linkscale3.tab[13,6]<-temp$p.value
+
+temp<-t.test(dat4$linkscale3[dat4$treat==2],dat4$linkscale3[dat4$treat==0])
+linkscale3.tab[14,1:2]<-temp$estimate
+linkscale3.tab[14,4:5]<-temp$conf.int
+linkscale3.tab[14,6]<-temp$p.value
+
+temp<-t.test(dat4$linkscale3[dat4$treat==2],dat4$linkscale3[dat4$treat==1])
+linkscale3.tab[15,1:2]<-temp$estimate
+linkscale3.tab[15,4:5]<-temp$conf.int
+linkscale3.tab[15,6]<-temp$p.value
+
+#ind
+temp<-t.test(dat6$linkscale3[dat6$treat==1],dat6$linkscale3[dat6$treat==0])
+linkscale3.tab[16,1:2]<-temp$estimate
+linkscale3.tab[16,4:5]<-temp$conf.int
+linkscale3.tab[16,6]<-temp$p.value
+
+temp<-t.test(dat6$linkscale3[dat6$treat==2],dat6$linkscale3[dat6$treat==0])
+linkscale3.tab[17,1:2]<-temp$estimate
+linkscale3.tab[17,4:5]<-temp$conf.int
+linkscale3.tab[17,6]<-temp$p.value
+
+temp<-t.test(dat6$linkscale3[dat6$treat==2],dat6$linkscale3[dat6$treat==1])
+linkscale3.tab[18,1:2]<-temp$estimate
+linkscale3.tab[18,4:5]<-temp$conf.int
+linkscale3.tab[18,6]<-temp$p.value
+
+###differences###
+linkscale3.tab$diff<-linkscale3.tab$x-linkscale3.tab$y
+
+###table for appendix###
+linkscale3.tab2<-linkscale3.tab
+
+#taking out t2-t1
+linkscale3.tab2<-linkscale3.tab2[linkscale3.tab2$treats!="t2-t1",]
+
+#rounded for printing out
+linkscale3.tab2$x<-round(linkscale3.tab2$x,3)
+linkscale3.tab2$y<-round(linkscale3.tab2$y,3)
+linkscale3.tab2$diff<-round(linkscale3.tab2$diff,3)
+linkscale3.tab2$lower<-round(linkscale3.tab2$lower,3)
+linkscale3.tab2$upper<-round(linkscale3.tab2$upper,3)
+linkscale3.tab2$p<-round(linkscale3.tab2$p,3)
+
+colnames(linkscale3.tab2)<-c("mean t1 or t2","mean t0","difference",
+                            "lower","upper","p-value","estimate","sample")
+
+write.csv(linkscale3.tab2,"linkscale3 appendix table.csv")
+
+```
+
+
